@@ -44,6 +44,7 @@ Key findings from `notebooks/EDA.ipynb`:
 The dataset is imbalanced — roughly 1 in 3 customers churned.
 
 <!-- Add screenshot: Churn distribution bar plot -->
+![churn_distribution](assets/Churn distribution.png)
 
 ### Feature Distributions
 
