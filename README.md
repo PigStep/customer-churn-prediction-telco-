@@ -12,7 +12,8 @@ Predicting customer churn for a telecom company using machine learning, with cos
 customer-churn-prediction-telco-/
 ├── notebooks/
 │   ├── EDA.ipynb          # Exploratory data analysis & feature insights
-│   └── Baseline.ipynb     # Model baselines & imbalance handling experiments
+│   ├── Baseline.ipynb     # Model baselines & imbalance handling experiments
+│   └── Model.ipynb        # Tuned LightGBM with Optuna, SHAP interpretation & cost analysis
 ├── README.md
 └── .gitignore
 ```
@@ -128,6 +129,59 @@ The dataset is mostly categorical (only 3 numeric features). SMOTE interpolates 
 
 ---
 
+## Model Development
+
+Combining insights from `EDA.ipynb` and `Baseline.ipynb` into a production-ready model in `notebooks/Model.ipynb`.
+
+### Feature Selection
+
+Based on EDA findings, dropped all non-predictive columns:
+- **`customerID`** — unique identifier
+- **`gender`** — no correlation with churn
+- **`MultipleLines`** — redundant with `PhoneService`
+- **`StreamingTV` / `StreamingMovies`** — high initial correlation explained by internet service, not streaming itself
+
+### Model Training
+
+**Model:** LightGBM (GBDT) with `scale_pos_weight` for class imbalance — the best-performing approach from baseline experiments.
+
+**Hyperparameter tuning:** Optuna (50 trials) optimizing two objectives independently:
+- **PR-AUC** (threshold-independent ranking)
+- **Recall** (threshold-dependent classification)
+
+Both optimizations yield statistically equivalent cost outcomes, so either objective can be used.
+
+**Validation:** Nested cross-validation (5 outer folds, 50 Optuna trials per fold) to prevent model selection bias. Hyperparameters are tuned only on each outer training fold; cost estimates come from held-out outer test folds that were never seen during tuning.
+
+### Cost-Optimized Threshold
+
+With retention success probability of **45%** (per Harvard Business Review):
+
+| Metric | Value |
+|--------|-------|
+| FN cost (missed churner) | $997.94 |
+| FP cost (false alarm) | $89.33 |
+| Best threshold | Determined per fold via cost minimization |
+| Model vs. no-model cost | Model achieves significant savings at 45% retention effectiveness |
+
+> [!TIP]
+> PR-AUC and Recall-based tuning produce statistically equivalent cost outcomes, so either optimization target can be used.
+
+### Model Interpretation (SHAP)
+
+SHAP analysis reveals the top-5 churn drivers:
+
+1. **Contract type** — month-to-month customers are substantially more likely to churn
+2. **Tenure** — new customers (low tenure) have higher churn risk; long-tenure customers are stable
+3. **Monthly charges** — higher bills correlate with increased churn probability
+4. **Tech support** — absence of tech support signals higher churn
+5. **Total charges** — low total charges indicate newer customers (multicollinearity with tenure and monthly charges may introduce noise)
+
+> [!NOTE]
+> The churning customer profile: new subscribers on month-to-month contracts with high monthly bills and no value-added services (tech support). This aligns with business intuition and expands the EDA hypothesis to include contract type influence.
+
+---
+
 ## Precision-Recall Analysis
 
 <!-- Add screenshot: PR curves for essential models (2x2 grid) -->
@@ -135,7 +189,6 @@ The dataset is mostly categorical (only 3 numeric features). SMOTE interpolates 
 Key takeaways from the PR curves:
 - ~70% precision achievable at ~20% recall (confident but conservative)
 - 80–100% recall possible at 25–40% precision (aggressive but noisy)
-#FIXME: not actually
 - **~60% recall at ~60% precision** — the practical middle ground
 
 ---
@@ -170,12 +223,14 @@ Based on retention company success probability:
 ## Recommendations
 
 1. **Model choice:**
-   - Use **LightGBM with class balancing** when quality matters
-   - Use **Undersampling + Random Forest** when inference speed matters
+   - Use **LightGBM with Optuna tuning** (PR-AUC or Recall objective) for best cost savings
+   - Use **Undersampling + Random Forest** when inference speed is critical
 
-2. **Threshold tuning:** depends on retention team success rate — requires deeper analysis with a tuned model
+2. **Threshold tuning:** tune decision threshold via cost minimization given your retention team's success rate — the cost-optimal threshold depends heavily on retention effectiveness
 
-3. **Business insight:** new customers (< 10 months) with high monthly charges are the highest churn risk segment
+3. **Business insight:** high-risk customers are **new subscribers on month-to-month contracts with high monthly charges and no tech support** — target retention offers at this segment
+
+4. **A/B test retention success rate:** the model's profitability hinges on actual retention probability. If retention success falls below ~20%, the model becomes unprofitable vs. a "no model" baseline
 
 ---
 
