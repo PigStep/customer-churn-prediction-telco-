@@ -30,15 +30,11 @@ with st.container(horizontal=True):
         "Total customers",
         f"{len(df):,}",
         border=True,
-        chart_data=df.groupby("Contract").size(),
-        chart_type="bar",
     )
     st.metric(
         "Churn rate",
         f"{df['Churn'].value_counts(normalize=True).get('Yes', 0):.1%}",
         border=True,
-        chart_data=df.groupby("tenure")["Churn"].apply(lambda x: (x == "Yes").mean()),
-        chart_type="line",
     )
     st.metric(
         "Avg monthly charges",
