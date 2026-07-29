@@ -56,34 +56,13 @@ def contract_churn_chart(df: pd.DataFrame) -> alt.Chart:
         alt.Chart(contract_churn)
         .mark_bar()
         .encode(
-            x=alt.X("Contract:N", sort=["Month-to-month", "One year", "Two year"]),
+            x=alt.X("Contract:N", sort=["Month-to-month", "One year", "Two year"], axis=alt.Axis(labelAngle=0)),
             y=alt.Y("Churn rate:Q", axis=alt.Axis(format="%")),
             color=alt.Color("Churn rate:Q", scale=alt.Scale(scheme="blues"), legend=None),
             tooltip=["Contract", alt.Tooltip("Churn rate", format=".1%")],
         )
         .properties(height=300)
     )
-
-
-def payment_churn_chart(df: pd.DataFrame) -> alt.Chart:
-    pay_churn = (
-        df.groupby("PaymentMethod", observed=True)["Churn"]
-        .apply(lambda x: (x == "Yes").mean())
-        .reset_index()
-    )
-    pay_churn.columns = ["PaymentMethod", "Churn rate"]
-    return (
-        alt.Chart(pay_churn)
-        .mark_bar()
-        .encode(
-            x=alt.X("Churn rate:Q", axis=alt.Axis(format="%")),
-            y=alt.Y("PaymentMethod:N", sort="-x"),
-            color=alt.Color("Churn rate:Q", scale=alt.Scale(scheme="blues"), legend=None),
-            tooltip=["PaymentMethod", alt.Tooltip("Churn rate", format=".1%")],
-        )
-        .properties(height=300)
-    )
-
 
 def monthly_charges_chart(df: pd.DataFrame) -> alt.Chart:
     return (
@@ -101,6 +80,23 @@ def monthly_charges_chart(df: pd.DataFrame) -> alt.Chart:
     )
 
 
+def tenure_boxplot_chart(df: pd.DataFrame) -> alt.Chart:
+    return (
+        alt.Chart(df)
+        .mark_boxplot(size=20, opacity=0.6)
+        .encode(
+            x=alt.X("Churn:N", title=None, sort=["No", "Yes"], axis=alt.Axis(labelAngle=0)),
+            y=alt.Y("tenure:Q", title=None),
+            color=alt.Color(
+                "Churn:N",
+                scale=alt.Scale(domain=["No", "Yes"], range=["#A6CFD3", "#0B307F"]),
+                legend=None,
+            ),
+        )
+        .properties(height=200)
+    )
+
+
 def tech_support_chart(df: pd.DataFrame) -> alt.Chart:
     ts_churn = (
         df.groupby("TechSupport", observed=True)["Churn"]
@@ -112,7 +108,7 @@ def tech_support_chart(df: pd.DataFrame) -> alt.Chart:
         alt.Chart(ts_churn)
         .mark_bar()
         .encode(
-            x=alt.X("TechSupport:N", sort=["No", "Yes", "No internet service"]),
+            x=alt.X("TechSupport:N", sort=["No", "Yes", "No internet service"], axis= alt.Axis(labelAngle=0)),
             y=alt.Y("Churn rate:Q", axis=alt.Axis(format="%")),
             color=alt.Color("Churn rate:Q", scale=alt.Scale(scheme="blues"), legend=None),
             tooltip=["TechSupport", alt.Tooltip("Churn rate", format=".1%")],
