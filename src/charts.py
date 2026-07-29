@@ -90,7 +90,7 @@ def monthly_charges_chart(df: pd.DataFrame) -> alt.Chart:
         alt.Chart(df)
         .mark_bar(opacity=0.7)
         .encode(
-            x=alt.X("MonthlyCharges:Q", bin=alt.Bin(maxbins=30), title="Monthly charges"),
+            x=alt.X("MonthlyCharges:Q", bin=alt.Bin(maxbins=30), title="$ Monthly charges"),
             y=alt.Y("count():Q", title="Count"),
             color=alt.Color(
                 "Churn:N",
