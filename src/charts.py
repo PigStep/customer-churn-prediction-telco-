@@ -13,7 +13,7 @@ def churn_distribution_chart(df: pd.DataFrame) -> alt.Chart:
             y=alt.Y("Count:Q"),
             color=alt.Color(
                 "Churn:N",
-                scale=alt.Scale(domain=["No", "Yes"], range=["#75A6AA", "#0B307F"]),
+                scale=alt.Scale(domain=["No", "Yes"], range=["#A6CFD3", "#0B307F"]),
                 legend=None,
             ),
             tooltip=["Churn", "Count"],
@@ -94,7 +94,7 @@ def monthly_charges_chart(df: pd.DataFrame) -> alt.Chart:
             y=alt.Y("count():Q", title="Count"),
             color=alt.Color(
                 "Churn:N",
-                scale=alt.Scale(domain=["No", "Yes"], range=["#75A6AA","#0B307F"]),
+                scale=alt.Scale(domain=["No", "Yes"], range=["#A6CFD3","#0B307F"]),
             ),
         )
         .properties(height=300)
