@@ -15,7 +15,6 @@ from charts import (
     churn_distribution_chart,
     churn_by_tenure_chart,
     contract_churn_chart,
-    payment_churn_chart,
     monthly_charges_chart,
     tech_support_chart,
 )
@@ -60,24 +59,16 @@ with col2:
         st.altair_chart(churn_by_tenure_chart(df), use_container_width=True)
         st.caption("New customers are at highest risk of churning.")
 
-col3, col4 = st.columns(2)
-
-with col3:
-    with st.container(border=True):
-        st.subheader(":material/account_balance: Contract type vs churn")
-        st.altair_chart(contract_churn_chart(df), use_container_width=True)
-
-with col4:
-    with st.container(border=True):
-        st.subheader(":material/payment: Payment method vs churn")
-        st.altair_chart(payment_churn_chart(df), use_container_width=True)
+with st.container(border=True):
+    st.subheader(":material/bar_chart: Monthly charges by churn")
+    st.altair_chart(monthly_charges_chart(df), use_container_width=True)
 
 col5, col6 = st.columns(2)
 
 with col5:
     with st.container(border=True):
-        st.subheader(":material/bar_chart: Monthly charges by churn")
-        st.altair_chart(monthly_charges_chart(df), use_container_width=True)
+        st.subheader(":material/account_balance: Contract type vs churn")
+        st.altair_chart(contract_churn_chart(df), use_container_width=True)
 
 with col6:
     with st.container(border=True):
