@@ -34,3 +34,7 @@ data/dataset.csv   # Telco churn dataset
 - **TotalCharges**: loaded as string, coerced to numeric (non-numeric rows dropped).
 - **SeniorCitizen**: converted from int (0/1) to bool.
 - No test suite, no CI, no lint/typecheck commands configured in the repo.
+
+## Streamlit working
+
+Use developing-with-streamlit skill to work with streamlit
