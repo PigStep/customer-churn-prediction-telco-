@@ -1,0 +1,17 @@
+[theme]
+# Primary interactive elements (Active tabs, focus rings, sliders, buttons)
+primaryColor = "#20BEFF"
+# Main page background color (Kaggle off-white)
+backgroundColor = "#F8F9FA"
+# Card, sidebar, and input element background color
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#0F172A"
+font = "sans serif"
+
+[server]
+# Optional: Keep UI clean by hiding default menu items if desired
+headless = true
+
+[browser]
+# Custom tab title behavior
+gatherUsageStats = false
