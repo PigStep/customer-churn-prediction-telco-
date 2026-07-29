@@ -56,7 +56,7 @@ def contract_churn_chart(df: pd.DataFrame) -> alt.Chart:
         .encode(
             x=alt.X("Contract:N", sort=["Month-to-month", "One year", "Two year"]),
             y=alt.Y("Churn rate:Q", axis=alt.Axis(format="%")),
-            color=alt.Color("Churn rate:Q", scale=alt.Scale(scheme="reds"), legend=None),
+            color=alt.Color("Churn rate:Q", scale=alt.Scale(scheme="blues"), legend=None),
             tooltip=["Contract", alt.Tooltip("Churn rate", format=".1%")],
         )
         .properties(height=300)
@@ -76,7 +76,7 @@ def payment_churn_chart(df: pd.DataFrame) -> alt.Chart:
         .encode(
             x=alt.X("Churn rate:Q", axis=alt.Axis(format="%")),
             y=alt.Y("PaymentMethod:N", sort="-x"),
-            color=alt.Color("Churn rate:Q", scale=alt.Scale(scheme="reds"), legend=None),
+            color=alt.Color("Churn rate:Q", scale=alt.Scale(scheme="blues"), legend=None),
             tooltip=["PaymentMethod", alt.Tooltip("Churn rate", format=".1%")],
         )
         .properties(height=300)
@@ -112,7 +112,7 @@ def tech_support_chart(df: pd.DataFrame) -> alt.Chart:
         .encode(
             x=alt.X("TechSupport:N", sort=["No", "Yes", "No internet service"]),
             y=alt.Y("Churn rate:Q", axis=alt.Axis(format="%")),
-            color=alt.Color("Churn rate:Q", scale=alt.Scale(scheme="reds"), legend=None),
+            color=alt.Color("Churn rate:Q", scale=alt.Scale(scheme="blues"), legend=None),
             tooltip=["TechSupport", alt.Tooltip("Churn rate", format=".1%")],
         )
         .properties(height=300)
