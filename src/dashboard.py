@@ -58,7 +58,7 @@ with col2:
     with st.container(border=True):
         st.subheader(":material/schedule: Churn rate by tenure")
         st.altair_chart(churn_by_tenure_chart(df), use_container_width=True)
-        st.caption("New customers (<10 months tenure) are at highest risk of churning.")
+        st.caption("New customers are at highest risk of churning.")
 
 col3, col4 = st.columns(2)
 

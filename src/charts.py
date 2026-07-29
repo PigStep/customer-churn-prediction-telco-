@@ -23,7 +23,9 @@ def churn_distribution_chart(df: pd.DataFrame) -> alt.Chart:
 
 
 def churn_by_tenure_chart(df: pd.DataFrame) -> alt.Chart:
-    tenure_bins = pd.cut(df["tenure"], bins=12)
+    bins = range(0, 73, 6)
+    labels = [f"{i}-{i+5}" for i in range(0, 72, 6)]
+    tenure_bins = pd.cut(df["tenure"], bins=bins, labels=labels)
     tenure_churn = (
         df.groupby(tenure_bins, observed=True)["Churn"]
         .apply(lambda x: (x == "Yes").mean())
@@ -31,17 +33,17 @@ def churn_by_tenure_chart(df: pd.DataFrame) -> alt.Chart:
     )
     tenure_churn.columns = ["Tenure range", "Churn rate"]
     tenure_churn["Tenure range"] = tenure_churn["Tenure range"].astype(str)
+    
     return (
         alt.Chart(tenure_churn)
-        .mark_line(point=True)
+        .mark_bar(point=True)
         .encode(
-            x=alt.X("Tenure range:N", title="Tenure", sort=None),
-            y=alt.Y("Churn rate:Q", title="Churn rate", axis=alt.Axis(format="%")),
+            x=alt.X("Churn rate:Q", title="Churn rate", axis=alt.Axis(format="%")),
+            y=alt.Y("Tenure range:N", title="Tenure (month)", sort=None),
             tooltip=["Tenure range", alt.Tooltip("Churn rate", format=".1%")],
         )
         .properties(height=300)
     )
-
 
 def contract_churn_chart(df: pd.DataFrame) -> alt.Chart:
     contract_churn = (
