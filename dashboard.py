@@ -59,42 +59,6 @@ def load_data(path: str) -> pd.DataFrame:
 
 
 df = load_data(DATA_PATH)
-total = len(df)
-churn_rate = df["Churn"].value_counts(normalize=True).get("Yes", 0)
-avg_tenure = df["tenure"].mean()
-avg_monthly = df["MonthlyCharges"].mean()
-
-with st.sidebar:
-    st.markdown("### :material/filter_alt: Filters")
-    contract_filter = st.multiselect(
-        "Contract type",
-        options=df["Contract"].cat.categories,
-        default=list(df["Contract"].cat.categories),
-    )
-    internet_filter = st.multiselect(
-        "Internet service",
-        options=df["InternetService"].cat.categories,
-        default=list(df["InternetService"].cat.categories),
-    )
-    payment_filter = st.multiselect(
-        "Payment method",
-        options=df["PaymentMethod"].cat.categories,
-        default=list(df["PaymentMethod"].cat.categories),
-    )
-    tenure_range = st.slider(
-        "Tenure (months)",
-        min_value=int(df["tenure"].min()),
-        max_value=int(df["tenure"].max()),
-        value=(int(df["tenure"].min()), int(df["tenure"].max())),
-    )
-
-mask = (
-    df["Contract"].isin(contract_filter)
-    & df["InternetService"].isin(internet_filter)
-    & df["PaymentMethod"].isin(payment_filter)
-    & df["tenure"].between(tenure_range[0], tenure_range[1])
-)
-filtered = df[mask]
 
 st.markdown("# Customer Churn Analysis")
 st.markdown("##### :material/analytics: Key metrics and insights from the Telco customer churn dataset")
@@ -102,27 +66,26 @@ st.markdown("##### :material/analytics: Key metrics and insights from the Telco 
 with st.container(horizontal=True):
     st.metric(
         "Total customers",
-        f"{len(filtered):,}",
-        delta=f"{len(filtered) - total:+d} vs unfiltered",
+        f"{len(df):,}",
         border=True,
-        chart_data=filtered.groupby("Contract").size(),
+        chart_data=df.groupby("Contract").size(),
         chart_type="bar",
     )
     st.metric(
         "Churn rate",
-        f"{filtered['Churn'].value_counts(normalize=True).get('Yes', 0):.1%}",
+        f"{df['Churn'].value_counts(normalize=True).get('Yes', 0):.1%}",
         border=True,
-        chart_data=filtered.groupby("tenure")["Churn"].apply(lambda x: (x == "Yes").mean()),
+        chart_data=df.groupby("tenure")["Churn"].apply(lambda x: (x == "Yes").mean()),
         chart_type="line",
     )
     st.metric(
         "Avg monthly charges",
-        f"${filtered['MonthlyCharges'].mean():.2f}",
+        f"${df['MonthlyCharges'].mean():.2f}",
         border=True,
     )
     st.metric(
         "Avg tenure",
-        f"{filtered['tenure'].mean():.1f} months",
+        f"{df['tenure'].mean():.1f} months",
         border=True,
     )
 
@@ -131,7 +94,7 @@ col1, col2 = st.columns(2)
 with col1:
     with st.container(border=True):
         st.subheader(":material/bar_chart: Churn distribution")
-        churn_counts = filtered["Churn"].value_counts().reset_index()
+        churn_counts = df["Churn"].value_counts().reset_index()
         churn_counts.columns = ["Churn", "Count"]
         c = (
             alt.Chart(churn_counts)
@@ -149,9 +112,9 @@ with col1:
 with col2:
     with st.container(border=True):
         st.subheader(":material/schedule: Churn rate by tenure")
-        tenure_bins = pd.cut(filtered["tenure"], bins=12)
+        tenure_bins = pd.cut(df["tenure"], bins=12)
         tenure_churn = (
-            filtered.groupby(tenure_bins, observed=True)["Churn"]
+            df.groupby(tenure_bins, observed=True)["Churn"]
             .apply(lambda x: (x == "Yes").mean())
             .reset_index()
         )
@@ -176,7 +139,7 @@ with col3:
     with st.container(border=True):
         st.subheader(":material/account_balance: Contract type vs churn")
         contract_churn = (
-            filtered.groupby("Contract", observed=True)["Churn"]
+            df.groupby("Contract", observed=True)["Churn"]
             .apply(lambda x: (x == "Yes").mean())
             .reset_index()
         )
@@ -198,7 +161,7 @@ with col4:
     with st.container(border=True):
         st.subheader(":material/payment: Payment method vs churn")
         pay_churn = (
-            filtered.groupby("PaymentMethod", observed=True)["Churn"]
+            df.groupby("PaymentMethod", observed=True)["Churn"]
             .apply(lambda x: (x == "Yes").mean())
             .reset_index()
         )
@@ -222,7 +185,7 @@ with col5:
     with st.container(border=True):
         st.subheader(":material/bar_chart: Monthly charges by churn")
         c = (
-            alt.Chart(filtered)
+            alt.Chart(df)
             .mark_bar(opacity=0.7)
             .encode(
                 x=alt.X("MonthlyCharges:Q", bin=alt.Bin(maxbins=30), title="Monthly charges"),
@@ -237,7 +200,7 @@ with col6:
     with st.container(border=True):
         st.subheader(":material/security: Tech support vs churn")
         ts_churn = (
-            filtered.groupby("TechSupport", observed=True)["Churn"]
+            df.groupby("TechSupport", observed=True)["Churn"]
             .apply(lambda x: (x == "Yes").mean())
             .reset_index()
         )
