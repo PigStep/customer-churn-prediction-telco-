@@ -252,6 +252,17 @@ body {
     </div>
   </section>
 
+  <section class="chart-row">
+    <div class="chart-container">
+      <h3>Tech Support vs Churn</h3>
+      <canvas id="chart-techsupport"></canvas>
+    </div>
+    <div class="chart-container">
+      <h3>Online Security vs Churn</h3>
+      <canvas id="chart-security"></canvas>
+    </div>
+  </section>
+
   <section class="table-section">
     <h3>Customer Detail</h3>
     <div class="table-controls">
@@ -291,6 +302,8 @@ const TENURE_DATA = [{"bucket": "0-5", "churn_rate": 0.5333}, {"bucket": "6-11",
 const CHARGE_DATA = [{"bin": "10-19", "no": 595, "yes": 58}, {"bin": "20-29", "no": 890, "yes": 104}, {"bin": "30-39", "no": 133, "yes": 52}, {"bin": "40-49", "no": 314, "yes": 147}, {"bin": "50-59", "no": 488, "yes": 129}, {"bin": "60-69", "no": 429, "yes": 112}, {"bin": "70-79", "no": 555, "yes": 361}, {"bin": "80-89", "no": 590, "yes": 336}, {"bin": "90-99", "no": 520, "yes": 317}, {"bin": "100-109", "no": 462, "yes": 225}, {"bin": "110-119", "no": 187, "yes": 28}];
 const SEGMENT_REVENUE = [{"segment": "Month-to-month + Fiber optic + No", "TotalCharges": 1461950.05}, {"segment": "One year + Fiber optic + No", "TotalCharges": 295204.65}, {"segment": "Month-to-month + Fiber optic + Yes", "TotalCharges": 269702.45}, {"segment": "One year + Fiber optic + Yes", "TotalCharges": 252879.35}, {"segment": "Two year + Fiber optic + Yes", "TotalCharges": 137474.4}, {"segment": "Month-to-month + DSL + No", "TotalCharges": 136858.95}, {"segment": "One year + DSL + Yes", "TotalCharges": 76407.0}, {"segment": "Two year + Fiber optic + No", "TotalCharges": 66046.55}, {"segment": "Month-to-month + DSL + Yes", "TotalCharges": 48721.6}, {"segment": "One year + DSL + No", "TotalCharges": 45707.95}, {"segment": "Two year + DSL + Yes", "TotalCharges": 34309.8}, {"segment": "Two year + DSL + No", "TotalCharges": 18011.2}];
 const PAYMENT_DATA = [{"payment": "Bank transfer (automatic)", "no": 1284, "yes": 258}, {"payment": "Credit card (automatic)", "no": 1289, "yes": 232}, {"payment": "Electronic check", "no": 1294, "yes": 1071}, {"payment": "Mailed check", "no": 1296, "yes": 308}];
+const TECHSUPPORT_DATA = [{"techsupport": "No", "no": 2026, "yes": 1446}, {"techsupport": "No internet service", "no": 1407, "yes": 113}, {"techsupport": "Yes", "no": 1730, "yes": 310}];
+const SECURITY_DATA = [{"security": "No", "no": 2036, "yes": 1461}, {"security": "No internet service", "no": 1407, "yes": 113}, {"security": "Yes", "no": 1720, "yes": 295}];
 const MODEL_DATA = [{"approach": "RF Baseline", "recall": 0.48, "precision": 0.64, "pr_auc": 0.6107}, {"approach": "RF + class_weight='balanced'", "recall": 0.48, "precision": 0.64, "pr_auc": 0.6148}, {"approach": "LightGBM (scale_pos_weight)", "recall": 0.75, "precision": 0.53, "pr_auc": 0.6533}, {"approach": "Undersampling + RF", "recall": 0.76, "precision": 0.51, "pr_auc": 0.611}, {"approach": "Bootstrap Oversampling + RF", "recall": 0.58, "precision": 0.59, "pr_auc": 0.5998}, {"approach": "SMOTE + RF", "recall": 0.58, "precision": 0.58, "pr_auc": 0.5913}, {"approach": "GBDT + Undersampling", "recall": 0.77, "precision": 0.5, "pr_auc": 0.6317}];
 const COST_DATA = {"fn_cost": 997.94, "fp_cost": 89.33, "retention_p": 0.45, "threshold_recs": [{"retention_rate": "> 20%", "threshold": "0.1 \u2013 0.3", "rationale": "Aggressive: catch more churners since retention is effective"}, {"retention_rate": "< 20%", "threshold": "0.4 \u2013 0.8", "rationale": "Conservative: only intervene when confident, since retention rarely works"}]};
 const FILTERS_DATA = {"contract": ["Month-to-month", "One year", "Two year"], "internet_service": ["DSL", "Fiber optic", "No"], "payment_method": ["Bank transfer (automatic)", "Credit card (automatic)", "Electronic check", "Mailed check"], "gender": ["Female", "Male"], "tech_support": ["No", "No internet service", "Yes"]};
@@ -422,6 +435,8 @@ class Dashboard {
     this.renderChargesChart();
     this.renderSegmentChart();
     this.renderPaymentChart();
+    this.renderTechSupportChart();
+    this.renderSecurityChart();
   }
 
   renderContractChart() {
@@ -601,6 +616,54 @@ class Dashboard {
               }
             }
           }
+        }
+      }
+    });
+  }
+
+  renderTechSupportChart() {
+    if (this.charts.techsupport) this.charts.techsupport.destroy();
+    const data = TECHSUPPORT_DATA;
+    const ctx = document.getElementById('chart-techsupport').getContext('2d');
+    this.charts.techsupport = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.map(d => d.techsupport),
+        datasets: [
+          { label: 'Not Churned', data: data.map(d => d.no), backgroundColor: COLORS.no + 'CC', borderColor: COLORS.no, borderWidth: 1, borderRadius: 3 },
+          { label: 'Churned', data: data.map(d => d.yes), backgroundColor: COLORS.yes + 'CC', borderColor: COLORS.yes, borderWidth: 1, borderRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 15, font: { size: 11 } } } },
+        scales: {
+          x: { stacked: false, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { font: { size: 11 } } }
+        }
+      }
+    });
+  }
+
+  renderSecurityChart() {
+    if (this.charts.security) this.charts.security.destroy();
+    const data = SECURITY_DATA;
+    const ctx = document.getElementById('chart-security').getContext('2d');
+    this.charts.security = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.map(d => d.security),
+        datasets: [
+          { label: 'Not Churned', data: data.map(d => d.no), backgroundColor: COLORS.no + 'CC', borderColor: COLORS.no, borderWidth: 1, borderRadius: 3 },
+          { label: 'Churned', data: data.map(d => d.yes), backgroundColor: COLORS.yes + 'CC', borderColor: COLORS.yes, borderWidth: 1, borderRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 15, font: { size: 11 } } } },
+        scales: {
+          x: { stacked: false, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { font: { size: 11 } } }
         }
       }
     });
