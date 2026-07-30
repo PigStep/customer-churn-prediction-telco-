@@ -129,6 +129,20 @@ body {
 .cost-table td { padding:6px 8px; border-bottom:1px solid #f0f0f0; }
 .cost-value { font-weight:700; color:var(--text-primary); }
 
+.info-bar {
+  background: #e8f0fe;
+  border-left: 4px solid var(--color-yes);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: var(--gap);
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+.info-bar strong {
+  color: var(--color-yes);
+}
+
 .dashboard-footer {
   text-align:center; padding:16px; font-size:11px; color:var(--text-secondary);
 }
@@ -262,6 +276,10 @@ body {
       <canvas id="chart-security"></canvas>
     </div>
   </section>
+
+  <div class="info-bar">
+    <strong>Target segment:</strong> New subscribers on month-to-month contracts with high monthly bills and no tech support.
+  </div>
 
   <section class="table-section">
     <h3>Customer Detail</h3>
