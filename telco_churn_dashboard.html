@@ -82,6 +82,8 @@ body {
 }
 .chart-container h3 { font-size:13px; font-weight:600; color:var(--text-primary); margin-bottom:12px; }
 .chart-container canvas { max-height:280px; max-width:100%; }
+.chart-row-full { grid-template-columns: 1fr; }
+.chart-full canvas { max-height:400px; }
 
 .table-section {
   background:var(--bg-card); border-radius:var(--radius); padding:18px 20px;
@@ -255,22 +257,25 @@ body {
     </div>
   </section>
 
-  <section class="chart-row">
-    <div class="chart-container">
+  <section class="chart-row chart-row-full">
+    <div class="chart-container chart-full">
       <h3>Customer Survival &amp; Revenue at Risk</h3>
       <canvas id="chart-survival"></canvas>
-    </div>
-    <div class="chart-container">
-      <h3>Churn by Payment Method</h3>
-      <canvas id="chart-payment"></canvas>
     </div>
   </section>
 
   <section class="chart-row">
     <div class="chart-container">
+      <h3>Churn by Payment Method</h3>
+      <canvas id="chart-payment"></canvas>
+    </div>
+    <div class="chart-container">
       <h3>Tech Support vs Churn</h3>
       <canvas id="chart-techsupport"></canvas>
     </div>
+  </section>
+
+  <section class="chart-row">
     <div class="chart-container">
       <h3>Online Security vs Churn</h3>
       <canvas id="chart-security"></canvas>
@@ -582,27 +587,14 @@ class Dashboard {
     const ctx = document.getElementById('chart-survival').getContext('2d');
 
     const data = KM_CURVE;
-    const labels = data.map(d => d.tenure);
-    const surv = data.map(d => d.survival * 100);
-
-    // Build shaded RMST area dataset: fill between T=10 and tau=24, null elsewhere
-    const rmstArea = data.map(d => {
-      const t = d.tenure;
-      if (t >= RMST_MEDIAN_T && t <= RMST_TAU) return d.survival * 100;
-      return null;
-    });
-
-    // Annotation line data for median churn
-    const medLine = data.map(d => d.tenure === RMST_MEDIAN_T ? 0 : null);
 
     this.charts.survival = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: labels,
         datasets: [
           {
             label: 'Survival Probability',
-            data: surv,
+            data: data.map(d => ({ x: d.tenure, y: d.survival * 100 })),
             borderColor: COLORS.yes,
             backgroundColor: COLORS.yes + '15',
             borderWidth: 2,
@@ -614,7 +606,7 @@ class Dashboard {
           },
           {
             label: 'RMST Area (10–24 mo)',
-            data: rmstArea,
+            data: data.filter(d => d.tenure >= RMST_MEDIAN_T && d.tenure < RMST_TAU).map(d => ({ x: d.tenure, y: d.survival * 100 })),
             backgroundColor: COLORS.yes + '25',
             borderColor: COLORS.yes + '40',
             borderWidth: 0,
@@ -627,6 +619,7 @@ class Dashboard {
       },
       options: {
         responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 24 } },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -643,6 +636,7 @@ class Dashboard {
         },
         scales: {
           x: {
+            type: 'linear',
             title: { display: true, text: 'Tenure (months)', font: { size: 11 } },
             grid: { display: false },
             ticks: { font: { size: 10 } },
@@ -690,7 +684,8 @@ class Dashboard {
 
           // Shaded region label
           ctx2.fillStyle = COLORS.yes + '30';
-          ctx2.fillRect(x10, yScale.top, x24 - x10, yScale.bottom - yScale.top);
+          const x23_5 = xScale.getPixelForValue(23.5);
+          ctx2.fillRect(x10, yScale.top, x23_5 - x10, yScale.bottom - yScale.top);
 
           // Annotation: Median churn point
           const y10 = yScale.getPixelForValue(RMST_SURVIVAL_AT_T * 100);
