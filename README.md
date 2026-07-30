@@ -14,6 +14,15 @@ customer-churn-prediction-telco-/
 │   ├── EDA.ipynb          # Exploratory data analysis & feature insights
 │   ├── Baseline.ipynb     # Model baselines & imbalance handling experiments
 │   └── Model.ipynb        # Tuned LightGBM with Optuna, SHAP interpretation & cost analysis
+├── data/
+│   └── dataset.csv        # Telco customer churn dataset
+├── assets/
+│   └── Churn distribution.png
+├── .streamlit/
+│   └── config.toml        # Streamlit custom theme config
+├── telco_churn_dashboard.html  # Interactive HTML dashboard
+├── AGENTS.md              # Agent instructions for AI coding assistants
+├── pyproject.toml         # Python project config (uv, streamlit)
 ├── README.md
 └── .gitignore
 ```
@@ -30,7 +39,7 @@ customer-churn-prediction-telco-/
 |------|-------|
 | Rows | 7,043 (7,032 after cleaning) |
 | Features | 21 |
-| Churn rate | ~36% (class imbalance) |
+| Churn rate | ~27% (class imbalance) |
 
 The dataset includes customer demographics, account information, services subscribed, and whether the customer churned in the last quarter.
 
@@ -42,7 +51,7 @@ Key findings from `notebooks/EDA.ipynb`:
 
 ### Churn Distribution
 
-The dataset is imbalanced — roughly 1 in 3 customers churned.
+The dataset is imbalanced — roughly 1 in 4 customers churned.
 
 <!-- Add screenshot: Churn distribution bar plot -->
 ![churn_distribution](assets/Churn distribution.png)
@@ -217,6 +226,21 @@ Based on retention company success probability:
 > At retention success below ~20%, the ML model becomes unprofitable compared to a "no model" approach (predicting no one churns). The model's value depends on the retention team's effectiveness.
 
 **Reference:** Harvard Business Review — "Marketing: Winning Back Lost Customers" (22 page)
+
+---
+
+## Interactive Dashboard
+
+An interactive HTML dashboard (`telco_churn_dashboard.html`) is included for exploring model results, comparing approaches, and visualizing cost trade-offs without running any code. Open it in any browser. Look at deployed dashboard here: https://churn-telco-dashboard.vladsmertev24.workers.dev/
+
+---
+
+## Limitations
+
+- **Historical snapshot**: The analysis relies on a single historical dataset; model performance should be validated on current data before deployment
+- **Temporal dynamics**: Seasonal churn patterns and other time-dependent effects were not explicitly modeled
+- **Multicollinearity**: `TotalCharges` exhibits multicollinearity with `tenure` and `MonthlyCharges`, which may introduce noise in SHAP interpretation
+- **Retention dependency**: The model's profitability hinges on actual retention success probability — if retention effectiveness falls below ~20%, the model becomes unprofitable vs. a "no model" baseline
 
 ---
 
