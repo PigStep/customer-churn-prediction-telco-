@@ -905,7 +905,6 @@ class Dashboard {
     let chtml = '<table class="cost-table"><tbody>';
     chtml += '<tr><td>False Negative Cost</td><td class="cost-value">$' + c.fn_cost.toFixed(2) + '</td></tr>';
     chtml += '<tr><td>False Positive Cost</td><td class="cost-value">$' + c.fp_cost.toFixed(2) + '</td></tr>';
-    chtml += '<tr><td>Retention Success Probability</td><td class="cost-value">' + (c.retention_p * 100).toFixed(0) + '%</td></tr>';
     chtml += '</tbody></table>';
     chtml += '<div style="margin-top:12px;font-size:12px;"><strong>Threshold Recommendations</strong></div>';
     chtml += '<table class="cost-table" style="margin-top:4px;"><thead><tr><th>Retention Rate</th><th>Threshold</th><th>Rationale</th></tr></thead><tbody>';
