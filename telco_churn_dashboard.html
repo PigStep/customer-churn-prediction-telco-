@@ -257,8 +257,8 @@ body {
 
   <section class="chart-row">
     <div class="chart-container">
-      <h3>Revenue at Risk by Segment</h3>
-      <canvas id="chart-segment"></canvas>
+      <h3>Customer Survival &amp; Revenue at Risk</h3>
+      <canvas id="chart-survival"></canvas>
     </div>
     <div class="chart-container">
       <h3>Churn by Payment Method</h3>
@@ -318,7 +318,13 @@ const CONTRACT_DATA = [{"contract": "Month-to-month", "no": 2220, "yes": 1655}, 
 const INTERNET_DATA = [{"service": "DSL", "no": 1957, "yes": 459}, {"service": "Fiber optic", "no": 1799, "yes": 1297}, {"service": "No", "no": 1407, "yes": 113}];
 const TENURE_DATA = [{"bucket": "0-5", "churn_rate": 0.5333}, {"bucket": "6-11", "churn_rate": 0.3589}, {"bucket": "12-17", "churn_rate": 0.323}, {"bucket": "18-23", "churn_rate": 0.2458}, {"bucket": "24-29", "churn_rate": 0.2181}, {"bucket": "30-35", "churn_rate": 0.2145}, {"bucket": "36-41", "churn_rate": 0.219}, {"bucket": "42-47", "churn_rate": 0.1619}, {"bucket": "48-53", "churn_rate": 0.1619}, {"bucket": "54-59", "churn_rate": 0.1262}, {"bucket": "60-65", "churn_rate": 0.0929}, {"bucket": "66-71", "churn_rate": 0.053}];
 const CHARGE_DATA = [{"bin": "10-19", "no": 595, "yes": 58}, {"bin": "20-29", "no": 890, "yes": 104}, {"bin": "30-39", "no": 133, "yes": 52}, {"bin": "40-49", "no": 314, "yes": 147}, {"bin": "50-59", "no": 488, "yes": 129}, {"bin": "60-69", "no": 429, "yes": 112}, {"bin": "70-79", "no": 555, "yes": 361}, {"bin": "80-89", "no": 590, "yes": 336}, {"bin": "90-99", "no": 520, "yes": 317}, {"bin": "100-109", "no": 462, "yes": 225}, {"bin": "110-119", "no": 187, "yes": 28}];
-const SEGMENT_REVENUE = [{"segment": "Month-to-month + Fiber optic + No", "TotalCharges": 1461950.05}, {"segment": "One year + Fiber optic + No", "TotalCharges": 295204.65}, {"segment": "Month-to-month + Fiber optic + Yes", "TotalCharges": 269702.45}, {"segment": "One year + Fiber optic + Yes", "TotalCharges": 252879.35}, {"segment": "Two year + Fiber optic + Yes", "TotalCharges": 137474.4}, {"segment": "Month-to-month + DSL + No", "TotalCharges": 136858.95}, {"segment": "One year + DSL + Yes", "TotalCharges": 76407.0}, {"segment": "Two year + Fiber optic + No", "TotalCharges": 66046.55}, {"segment": "Month-to-month + DSL + Yes", "TotalCharges": 48721.6}, {"segment": "One year + DSL + No", "TotalCharges": 45707.95}, {"segment": "Two year + DSL + Yes", "TotalCharges": 34309.8}, {"segment": "Two year + DSL + No", "TotalCharges": 18011.2}];
+const KM_CURVE = [{"tenure": 1, "survival": 0.946},{"tenure": 2, "survival": 0.9278},{"tenure": 3, "survival": 0.9137},{"tenure": 4, "survival": 0.901},{"tenure": 5, "survival": 0.8911},{"tenure": 6, "survival": 0.8848},{"tenure": 7, "survival": 0.8767},{"tenure": 8, "survival": 0.8699},{"tenure": 9, "survival": 0.8624},{"tenure": 10, "survival": 0.8549},{"tenure": 11, "survival": 0.8497},{"tenure": 12, "survival": 0.8432},{"tenure": 13, "survival": 0.8366},{"tenure": 14, "survival": 0.8324},{"tenure": 15, "survival": 0.8258},{"tenure": 16, "survival": 0.8207},{"tenure": 17, "survival": 0.816},{"tenure": 18, "survival": 0.8115},{"tenure": 19, "survival": 0.808},{"tenure": 20, "survival": 0.8045},{"tenure": 21, "survival": 0.8012},{"tenure": 22, "survival": 0.796},{"tenure": 23, "survival": 0.7934},{"tenure": 24, "survival": 0.7887},{"tenure": 25, "survival": 0.784},{"tenure": 26, "survival": 0.7809},{"tenure": 27, "survival": 0.7781},{"tenure": 28, "survival": 0.7755},{"tenure": 29, "survival": 0.7722},{"tenure": 30, "survival": 0.7687},{"tenure": 31, "survival": 0.7651},{"tenure": 32, "survival": 0.7607},{"tenure": 33, "survival": 0.7574},{"tenure": 34, "survival": 0.7546},{"tenure": 35, "survival": 0.751},{"tenure": 36, "survival": 0.7485},{"tenure": 37, "survival": 0.7448},{"tenure": 38, "survival": 0.7415},{"tenure": 39, "survival": 0.7379},{"tenure": 40, "survival": 0.7345},{"tenure": 41, "survival": 0.7308},{"tenure": 42, "survival": 0.727},{"tenure": 43, "survival": 0.7228},{"tenure": 44, "survival": 0.7211},{"tenure": 45, "survival": 0.7194},{"tenure": 46, "survival": 0.7158},{"tenure": 47, "survival": 0.7116},{"tenure": 48, "survival": 0.7088},{"tenure": 49, "survival": 0.7041},{"tenure": 50, "survival": 0.7009},{"tenure": 51, "survival": 0.6982},{"tenure": 52, "survival": 0.6954},{"tenure": 53, "survival": 0.6905},{"tenure": 54, "survival": 0.6857},{"tenure": 55, "survival": 0.6823},{"tenure": 56, "survival": 0.6784},{"tenure": 57, "survival": 0.6752},{"tenure": 58, "survival": 0.6706},{"tenure": 59, "survival": 0.6671},{"tenure": 60, "survival": 0.6644},{"tenure": 61, "survival": 0.6606},{"tenure": 62, "survival": 0.6581},{"tenure": 63, "survival": 0.6561},{"tenure": 64, "survival": 0.6538},{"tenure": 65, "survival": 0.6485},{"tenure": 66, "survival": 0.6404},{"tenure": 67, "survival": 0.6336},{"tenure": 68, "survival": 0.6269},{"tenure": 69, "survival": 0.6201},{"tenure": 70, "survival": 0.6097},{"tenure": 71, "survival": 0.6028},{"tenure": 72, "survival": 0.5928}];
+const RMST_MEDIAN_T = 10;
+const RMST_TAU = 24;
+const RMST_EXPECTED_REMAINING = 13.41;
+const RMST_AREA = 11.46;
+const RMST_SURVIVAL_AT_T = 0.8549;
+const RMST_REVENUE_PER_CUSTOMER = 997.96;
 const PAYMENT_DATA = [{"payment": "Bank transfer (automatic)", "no": 1284, "yes": 258}, {"payment": "Credit card (automatic)", "no": 1289, "yes": 232}, {"payment": "Electronic check", "no": 1294, "yes": 1071}, {"payment": "Mailed check", "no": 1296, "yes": 308}];
 const TECHSUPPORT_DATA = [{"techsupport": "No", "no": 2026, "yes": 1446}, {"techsupport": "No internet service", "no": 1407, "yes": 113}, {"techsupport": "Yes", "no": 1730, "yes": 310}];
 const SECURITY_DATA = [{"security": "No", "no": 2036, "yes": 1461}, {"security": "No internet service", "no": 1407, "yes": 113}, {"security": "Yes", "no": 1720, "yes": 295}];
@@ -451,7 +457,7 @@ class Dashboard {
     this.renderInternetChart();
     this.renderTenureChart();
     this.renderChargesChart();
-    this.renderSegmentChart();
+    this.renderSurvivalChart();
     this.renderPaymentChart();
     this.renderTechSupportChart();
     this.renderSecurityChart();
@@ -571,37 +577,164 @@ class Dashboard {
     });
   }
 
-  renderSegmentChart() {
-    if (this.charts.segment) this.charts.segment.destroy();
-    const data = SEGMENT_REVENUE;
-    const labels = data.map(d => d.segment.replace(/ \+ /g, ' '));
-    const values = data.map(d => d.TotalCharges);
-    const ctx = document.getElementById('chart-segment').getContext('2d');
-    this.charts.segment = new Chart(ctx, {
-      type: 'bar',
+  renderSurvivalChart() {
+    if (this.charts.survival) this.charts.survival.destroy();
+    const ctx = document.getElementById('chart-survival').getContext('2d');
+
+    const data = KM_CURVE;
+    const labels = data.map(d => d.tenure);
+    const surv = data.map(d => d.survival * 100);
+
+    // Build shaded RMST area dataset: fill between T=10 and tau=24, null elsewhere
+    const rmstArea = data.map(d => {
+      const t = d.tenure;
+      if (t >= RMST_MEDIAN_T && t <= RMST_TAU) return d.survival * 100;
+      return null;
+    });
+
+    // Annotation line data for median churn
+    const medLine = data.map(d => d.tenure === RMST_MEDIAN_T ? 0 : null);
+
+    this.charts.survival = new Chart(ctx, {
+      type: 'line',
       data: {
         labels: labels,
-        datasets: [{
-          label: 'Revenue at Risk',
-          data: values,
-          backgroundColor: values.map((v,i) => CHART_COLORS[i % CHART_COLORS.length] + 'CC'),
-          borderColor: values.map((v,i) => CHART_COLORS[i % CHART_COLORS.length]),
-          borderWidth: 1,
-          borderRadius: 3,
-        }]
+        datasets: [
+          {
+            label: 'Survival Probability',
+            data: surv,
+            borderColor: COLORS.yes,
+            backgroundColor: COLORS.yes + '15',
+            borderWidth: 2,
+            fill: false,
+            tension: 0,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            order: 2,
+          },
+          {
+            label: 'RMST Area (10–24 mo)',
+            data: rmstArea,
+            backgroundColor: COLORS.yes + '25',
+            borderColor: COLORS.yes + '40',
+            borderWidth: 0,
+            fill: true,
+            pointRadius: 0,
+            tension: 0,
+            order: 1,
+          }
+        ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        indexAxis: 'y',
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.x, 'currency') } }
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: ctx => {
+                if (ctx.dataset.label === 'Survival Probability')
+                  return ctx.parsed.y.toFixed(1) + '% survive';
+                return '';
+              }
+            }
+          }
         },
         scales: {
-          x: { beginAtZero: true, ticks: { callback: v => fmt(v, 'currency'), font: { size: 10 } } },
-          y: { grid: { display: false }, ticks: { font: { size: 9 } } }
+          x: {
+            title: { display: true, text: 'Tenure (months)', font: { size: 11 } },
+            grid: { display: false },
+            ticks: { font: { size: 10 } },
+            min: 0,
+            max: 72,
+          },
+          y: {
+            title: { display: true, text: 'Survival (%)', font: { size: 11 } },
+            min: 50,
+            max: 100,
+            ticks: { callback: v => v + '%', font: { size: 10 } },
+            grid: { color: '#f0f0f0' },
+          }
         }
-      }
+      },
+      plugins: [{
+        id: 'survivalAnnotations',
+        afterDraw(chart) {
+          const ctx2 = chart.ctx;
+          const xScale = chart.scales.x;
+          const yScale = chart.scales.y;
+
+          // Vertical dashed line at median churn (T=10)
+          const x10 = xScale.getPixelForValue(RMST_MEDIAN_T);
+          ctx2.save();
+          ctx2.setLineDash([5, 5]);
+          ctx2.strokeStyle = '#C44E52';
+          ctx2.lineWidth = 1.5;
+          ctx2.beginPath();
+          ctx2.moveTo(x10, yScale.top);
+          ctx2.lineTo(x10, yScale.bottom);
+          ctx2.stroke();
+          ctx2.setLineDash([]);
+
+          // Vertical dashed line at retention horizon (tau=24)
+          const x24 = xScale.getPixelForValue(RMST_TAU);
+          ctx2.strokeStyle = '#55A868';
+          ctx2.setLineDash([5, 5]);
+          ctx2.lineWidth = 1.5;
+          ctx2.beginPath();
+          ctx2.moveTo(x24, yScale.top);
+          ctx2.lineTo(x24, yScale.bottom);
+          ctx2.stroke();
+          ctx2.setLineDash([]);
+
+          // Shaded region label
+          ctx2.fillStyle = COLORS.yes + '30';
+          ctx2.fillRect(x10, yScale.top, x24 - x10, yScale.bottom - yScale.top);
+
+          // Annotation: Median churn point
+          const y10 = yScale.getPixelForValue(RMST_SURVIVAL_AT_T * 100);
+          ctx2.fillStyle = '#C44E52';
+          ctx2.beginPath();
+          ctx2.arc(x10, y10, 5, 0, 2 * Math.PI);
+          ctx2.fill();
+          ctx2.strokeStyle = '#C44E52';
+          ctx2.lineWidth = 1;
+          ctx2.stroke();
+
+          // Annotation box
+          const boxX = x10 + 8;
+          const boxY = y10 - 45;
+          ctx2.fillStyle = 'rgba(255,255,255,0.95)';
+          ctx2.shadowColor = 'rgba(0,0,0,0.1)';
+          ctx2.shadowBlur = 6;
+          ctx2.beginPath();
+          ctx2.roundRect(boxX, boxY, 200, 42, 4);
+          ctx2.fill();
+          ctx2.shadowBlur = 0;
+          ctx2.strokeStyle = '#dee2e6';
+          ctx2.lineWidth = 1;
+          ctx2.beginPath();
+          ctx2.roundRect(boxX, boxY, 200, 42, 4);
+          ctx2.stroke();
+
+          ctx2.fillStyle = '#C44E52';
+          ctx2.font = 'bold 11px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif';
+          ctx2.fillText('Median churn: ' + RMST_MEDIAN_T + ' mo', boxX + 8, boxY + 15);
+          ctx2.fillStyle = '#212529';
+          ctx2.font = '11px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif';
+          ctx2.fillText('RMST: ~' + RMST_EXPECTED_REMAINING + ' mo \u2192 $' + RMST_REVENUE_PER_CUSTOMER + '/cust', boxX + 8, boxY + 31);
+
+          // Tau=24 label
+          ctx2.fillStyle = '#55A868';
+          ctx2.font = 'bold 11px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif';
+          ctx2.textAlign = 'center';
+          ctx2.fillText('Retention horizon (' + RMST_TAU + ' mo)', x24, yScale.top - 8);
+          ctx2.textAlign = 'left';
+
+          ctx2.restore();
+        }
+      }]
     });
   }
 
