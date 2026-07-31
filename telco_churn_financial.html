@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telco Churn — Financial Impact &amp; P&amp;L View</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" crossorigin="anonymous"></script>
+<style>
+:root {
+  --bg-primary: #f4f5f7;
+  --bg-card: #ffffff;
+  --bg-header: #1B5E20;
+  --text-primary: #1a1a2e;
+  --text-secondary: #6c757d;
+  --text-on-dark: #ffffff;
+  --color-no: #A6CFD3;
+  --color-yes: #0B307F;
+  --color-accent1: #DD8452;
+  --color-accent2: #55A868;
+  --positive: #28a745;
+  --negative: #dc3545;
+  --gap: 14px;
+  --radius: 8px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+.dashboard-container { max-width:1440px; margin:0 auto; padding:var(--gap); }
+.dashboard-header {
+  background: var(--bg-header);
+  color: var(--text-on-dark);
+  padding: 18px 24px;
+  border-radius: var(--radius);
+  margin-bottom: var(--gap);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.dashboard-header h1 { font-size:20px; font-weight:600; }
+.header-subtitle { font-size:13px; color:rgba(255,255,255,0.8); }
+.header-link { font-size:12px; color:rgba(255,255,255,0.7); }
+.header-link a { color:#81C784; }
+
+.kpi-row {
+  display:grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+.kpi-card {
+  background:var(--bg-card); border-radius:var(--radius); padding:16px 18px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+}
+.kpi-label { font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:2px; }
+.kpi-value { font-size:24px; font-weight:700; color:var(--text-primary); margin-bottom:2px; }
+.kpi-change { font-size:12px; font-weight:500; }
+.kpi-change.positive { color:var(--positive); }
+.kpi-change.negative { color:var(--negative); }
+
+.chart-row {
+  display:grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+.chart-container {
+  background:var(--bg-card); border-radius:var(--radius); padding:18px 20px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+}
+.chart-container h3 { font-size:13px; font-weight:600; color:var(--text-primary); margin-bottom:12px; }
+.chart-container canvas { max-height:300px; max-width:100%; }
+.chart-row-full { grid-template-columns: 1fr; }
+.chart-full canvas { max-height:400px; }
+
+.info-bar {
+  background:#E8F5E9;
+  border-left: 4px solid var(--bg-header);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: var(--gap);
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+.info-bar strong { color: #1B5E20; }
+.info-bar .cite { font-size:11px; color:var(--text-secondary); margin-top:6px; }
+
+.bottom-row {
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+.bottom-card {
+  background:var(--bg-card); border-radius:var(--radius); padding:18px 20px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+}
+.bottom-card h3 { font-size:13px; font-weight:600; margin-bottom:12px; }
+.cost-table { width:100%; border-collapse:collapse; font-size:12px; }
+.cost-table th { text-align:left; padding:6px 8px; border-bottom:2px solid #dee2e6; color:var(--text-secondary); font-size:11px; text-transform:uppercase; letter-spacing:0.4px; }
+.cost-table td { padding:6px 8px; border-bottom:1px solid #f0f0f0; }
+.cost-value { font-weight:700; color:var(--text-primary); }
+.best-model { font-weight:700; color:#1B5E20; }
+
+.dashboard-footer {
+  text-align:center; padding:16px; font-size:11px; color:var(--text-secondary);
+}
+
+@media (max-width: 1024px) {
+  .kpi-row { grid-template-columns: repeat(3, 1fr); }
+  .chart-row { grid-template-columns: 1fr; }
+  .bottom-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .dashboard-header { flex-direction:column; align-items:flex-start; }
+}
+
+.cost-annot { font-size:11px; fill:var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <div>
+      <h1>Telco Churn — Financial Impact &amp; P&amp;L View</h1>
+      <div class="header-subtitle">Revenue at risk, model cost-savings analysis &amp; threshold optimization</div>
+    </div>
+    <div class="header-link">
+      <a href="https://static.fecredit.com.vn/Document/Th%C6%B0%20Vi%E1%BB%87n%20S%C3%A1ch/Merged/Mar%2016/Part%201.pdf" target="_blank">HBR: Marketing winning back lost customers &rarr;</a>
+    </div>
+  </header>
+
+  <section class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Monthly Revenue</div>
+      <div class="kpi-value" id="kpi-total-rev">--</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Monthly Rev at Risk</div>
+      <div class="kpi-value" id="kpi-rev-risk">--</div>
+      <div class="kpi-change negative" id="kpi-rev-risk-pct"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Annualized Rev at Risk</div>
+      <div class="kpi-value" id="kpi-annual-risk">--</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">No-Model Cost (Baseline)</div>
+      <div class="kpi-value" id="kpi-no-model">--</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Model Cost (Optimal)</div>
+      <div class="kpi-value" id="kpi-model-cost">--</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Max Cost Savings</div>
+      <div class="kpi-value" id="kpi-savings">--</div>
+      <div class="kpi-change positive" id="kpi-savings-pct"></div>
+    </div>
+  </section>
+
+  <section class="chart-row chart-row-full chart-full">
+    <div class="chart-container">
+      <h3>Total Cost at Different Thresholds — RF Baseline Model</h3>
+      <canvas id="chart-cost-rf"></canvas>
+    </div>
+  </section>
+
+  <section class="chart-row chart-row-full chart-full">
+    <div class="chart-container">
+      <h3>Total Cost Curve — Optimized LightGBM (PR-AUC, 45% Retention)</h3>
+      <canvas id="chart-cost-lgb"></canvas>
+    </div>
+  </section>
+
+  <section class="chart-row">
+    <div class="chart-container">
+      <h3>Monthly Revenue at Risk by Contract Type</h3>
+      <canvas id="chart-rev-contract"></canvas>
+    </div>
+    <div class="chart-container">
+      <h3>Revenue at Risk by Tenure Bucket</h3>
+      <canvas id="chart-rev-tenure"></canvas>
+    </div>
+  </section>
+
+  <section class="chart-row">
+    <div class="chart-container">
+      <h3>Churned Monthly Revenue by Internet Service</h3>
+      <canvas id="chart-rev-internet"></canvas>
+    </div>
+    <div class="chart-container">
+      <h3>Churned Revenue by Payment Method</h3>
+      <canvas id="chart-rev-payment"></canvas>
+    </div>
+  </section>
+
+  <div class="info-bar">
+    <strong>A/B Testing Required</strong> — The 45% retention rate is sourced from <em>Harvard Business Review</em> (p.22, "Marketing winning back lost customers") for a 6-month / 20% discount win-back strategy. <strong>This assumption must be validated in production via A/B testing.</strong> The model's cost savings are highly sensitive to the actual retention rate (see chart above — below ~20% retention, the model may not be profitable vs the no-model baseline).<br>
+    <div class="cite">&mdash; Source: <a href="https://static.fecredit.com.vn/Document/Th%C6%B0%20Vi%E1%BB%87n%20S%C3%A1ch/Merged/Mar%2016/Part%201.pdf" target="_blank">HBR, "Marketing winning back lost customers"</a>, page 22.</div>
+  </div>
+
+  <section class="bottom-row">
+    <div class="bottom-card">
+      <h3>Model Performance Comparison</h3>
+      <div id="model-table"></div>
+    </div>
+    <div class="bottom-card">
+      <h3>Cost Analysis &amp; Threshold Recommendations</h3>
+      <div id="cost-container"></div>
+    </div>
+  </section>
+
+  <footer class="dashboard-footer">
+    Data source: Telco Customer Churn &mdash; Kaggle &nbsp;|&nbsp; Model: LightGBM (PR-AUC optimized) &nbsp;|&nbsp; <span id="data-date"></span>
+  </footer>
+</div>
+
+<script>
+// ==================== EMBEDDED DATA ====================
+const COST_DATA = {
+  "rf": {
+    "thresholds": [0,0.0101,0.0121,0.0131,0.0141,0.0152,0.0162,0.0172,0.0182,0.0192,0.0212,0.0222,0.0232,0.0242,0.0253,0.0263,0.0273,0.0283,0.0303,0.0313,0.0333,0.0354,0.0364,0.0384,0.0394,0.0414,0.0434,0.0455,0.0475,0.0495,0.0515,0.0535,0.0556,0.0576,0.0596,0.0616,0.0636,0.0657,0.0687,0.0717,0.0737,0.0758,0.0778,0.0798,0.0818,0.0838,0.0859,0.0879,0.0899,0.0919,0.0939,0.096,0.1,0.104,0.1081,0.1121,0.1162,0.1202,0.1242,0.1283,0.1323,0.1364,0.1404,0.1444,0.1485,0.1525,0.1566,0.1606,0.1646,0.1687,0.1727,0.1768,0.1808,0.1848,0.1889,0.1929,0.197,0.201,0.2051,0.2091,0.2131,0.2172,0.2212,0.2293,0.2333,0.2414,0.2495,0.2576,0.2657,0.2737,0.2818,0.2899,0.302,0.3141,0.3263,0.3384,0.3545,0.3667,0.3869,0.4071,0.4273,0.4515,0.4758,0.5,0.5404,0.5816,0.6242,0.6745,0.728,0.8,0.86,1],
+    "no_model_cost": 615728.98,
+    "cost_curves": {
+      "0.15": [621705.95,604233.56,597748.87,592304.08,589072.42,586901.99,584663.76,583174.43,581786.74,581063.92,579807.37,579276.54,578551.11,578020.28,577662.43,577223.86,577281.89,576730.87,576041.73,575394.56,574908.9,574230.89,573600.97,572391.96,571990.32,571574.99,571755.03,571117.9,570727.29,570279.63,569969.36,569963.3,569423.22,569280.4,568935.09,568904.73,568831.28,568785.14,568563.42,568294.5,568292.18,568067.93,568021.93,568021.63,567989.07,567957.02,567733.82,567735.9,567728.66,567715.54,567756.26,567648.39,567640.33,567206.56,567207.88,566684.09,566414.84,566405.77,566326.71,566290.49,566124.78,566154.04,565913.64,565848.84,565804.83,565699.37,565767.55,565700.76,565692.07,565665.63,565656.23,565639.41,565634.96,565631.24,565627.17,565619.78,565627.05,565612.73,565638.7,565685.64,565667.4,565762.94,566002.76,565917.85,566083.84,566108.1,566018.99,566522.25,567137.08,567537.84,568422.34,569020.02,569507.53,570050.91,570902.88,571517.5,572179.8,572567.1,572888.75,573157.98,573704.42,574611.96,575696.88,577241.49,579868.51,582609.01,585908.74,589757.25,593605.77,600466.86,606887.41,614648.46,615728.98],
+      "0.2": [593683.34,576700.24,570358.72,565005.62,561829.92,559703.07,557500.7,556034.51,554665.9,553955.1,552756.37,552257.88,551561.99,551058.42,550716.66,550293.03,550365.19,549826.25,549169.89,548553.36,548092,547447.92,546848.04,545690.12,545309.62,544914.09,545108.75,544490.17,544117.01,543685.38,543390.65,543396.82,542873.97,542739.04,542407.45,542384.58,542317.1,542276.17,542067.01,541811.44,541812.09,541597.99,541556.34,541557.57,541527.74,541497.7,541284.49,541288.46,541282.68,541270.87,541313.8,541212.45,541206.09,540789.45,540792.39,540282.05,540021.94,540014.38,539941.45,539909.03,539751.69,539784.54,539554.03,539494.6,539455.09,539355.08,539428.08,539365.54,539359.48,539335.73,539328.04,539313.19,539310.1,539307.68,539304.72,539298.33,539306.42,539293.54,539321.77,539370.41,539353.52,539453.59,539703.5,539622.93,539798.34,539826.24,539742.62,540260.39,540890.47,541300.48,542201.78,542812.15,543312.28,543868.43,544755.77,545434.72,546251.62,546753.86,547169.87,547514.79,548117.84,549119.74,550338.58,552058.99,555077.69,558195.07,562027.93,566496.96,570966,578716.62,585908.99,594474.01,615728.98],
+      "0.4": [545985.87,529647.02,523506.15,518284.87,515199.03,513140.79,511001.76,509581.56,508247.57,507559.99,506427.08,505969.46,505312.23,504841.25,504520.42,504115.37,504207.93,503686.73,503072.14,502492.93,502062.45,501457.76,500896.13,499803.39,499452.18,499083.18,499300.49,498706.6,498357.86,497949.63,497677.39,497704.79,497210.63,497092.22,496781.45,496772.57,496717.75,496687.1,496498.91,496267.36,496274.23,496079.66,496047.2,496053.41,496029.18,496003.53,495810.59,495818.83,495817.06,495807.75,495856.22,495768.44,495767.74,495381.02,495390.41,494912.12,494675.76,494673.53,494613.69,494591.67,494454.55,494502.49,494298.22,494251.51,494221.14,494132.37,494222.83,494174.91,494178.49,494166.11,494163.45,494156.74,494159.18,494163.93,494170.01,494164.77,494181.69,494178.84,494229.48,494430.3,494448.54,494712.66,495519.66,495532.77,496205.19,496440.56,496498.91,497525.32,498623.82,499222.96,500693.65,501301.87,502090.87,503074.35,504304.98,505492.92,506554.96,507322.25,507930.14,508416.39,509245.51,510588.87,512199.46,514496.76,518519.85,522786.94,527817.35,533699.08,539580.82,549613.22,558851.47,570334.27,615728.98],
+      "0.45": [537081.43,520862.57,514769.09,509583.2,506518.35,504475.35,502351.53,500941.79,499617.11,498935.03,497813.31,497361.99,496712.73,496248.26,495931.28,495529.58,495623.76,495106.63,494497.52,493923.87,493497.92,492899.42,492343.19,491258.72,490911.07,490545.3,490765.07,490174.82,489828.82,489423.22,489153.4,489182.28,488691.31,488574.55,488266.02,488258.35,488204.76,488175.02,487988.72,487758.94,487766.54,487573.49,487541.93,487548.52,487525.03,487499.95,487308.59,487317.47,487316.19,487307.25,487356.52,487270.08,487270.03,486886.49,486896.44,486421.6,486187.23,486185.52,486127.21,486106.17,485971.03,486020.12,485818.15,485772.62,485743.19,485655.7,485747.27,485700.4,485704.66,485692.96,485690.79,485684.65,485687.51,485692.7,485699.23,485694.42,485711.81,485709.58,485761.42,485964.74,485984.23,486251.57,487064.78,487079.77,487758.33,487995.82,488055.87,489089.07,490194.83,490798.29,492278.35,492892.31,493687.79,494679.54,495920.99,497118.01,498190.49,498965.21,499579.36,500070.31,500908.48,502265.42,503892.76,506214.82,510276.23,514585.86,519668.31,525612.28,531556.26,541669.45,550972.78,562526.02,615728.98],
+      "0.6": [518981.19,503090.54,497083.51,491956.19,488932.57,486918.49,484823.87,483435.17,482128.06,481456.27,480369.07,479940.36,479314.82,478870.59,478566.36,478177.12,478280.07,477773.12,477187.73,476638.34,476233.79,475662.85,475131.37,474085.57,473756.24,473407.97,473643.62,473069.22,472739.28,472350.52,472095.28,472136.23,471665.86,471559.17,471266.64,471265.76,471219.23,471194.12,471021.49,470806.38,470819.4,470640.75,470615.93,470625.34,470605.65,470583.51,470406.49,470418.08,470419.31,470412.11,470465.8,470388.88,470392.1,470028.82,470040.81,469584.4,469362.32,469363.01,469311.83,469295.03,469170.81,469224.74,469036.08,468996.39,468972.2,468892.21,468990.44,468949.67,468957.65,468949.21,468949.14,468945.21,468949.77,468956.88,468965.87,468963.03,468983.15,468983.52,469042.85,469257.71,469280.66,469560.94,470399.09,470421.46,471120.87,471366.46,471434.21,472491.68,473622.84,474242.31,475750.63,476380.49,477196.41,478214.31,479493.6,480729.00,481846.77,482660.35,483309.37,483828.44,484708.97,486130.86,487839.58,490278.24,494535.04,499104.97,504509.75,510847.69,517185.63,527986.32,537886.26,550148.98,615728.98],
+      "0.8": [490185.3,474756.79,468862.45,463805.8,460832.53,458858.44,456805.17,455445.04,454162.97,453506.8,452471.79,452078.66,451487.51,451069.73,450783.15,450411.52,450530.12,450041.99,449496.21,448986.01,448613.34,448088.62,447599.33,446626.39,446328.08,446011.01,446272.32,445727.32,445424.55,445064.67,444833.85,444896.22,444468.27,444382.27,444119.38,444136.09,444105.32,444095.02,443949.44,443765.11,443790.26,443639.31,443627.65,443646.18,443636.53,443622.36,443478.37,443499.72,443508.68,443506.3,443577.09,443523.57,443542.05,443230.64,443257.57,442856.94,442670.98,442684.55,442655.3,442655.94,442570.26,442672.89,442554.49,442549.21,442554.28,442516.45,442681.03,442704.02,442761.75,442807.94,442838.41,442863.9,442888.76,442913.79,442941.11,442956.03,443002.41,443056.29,443184.69,443528.81,443640.79,444315.32,446075.37,446678.61,448801.53,449751.05,450739.96,453614.31,456729.47,458593.66,462178.5,463238.22,464815.73,466964.29,469461.33,471751.77,473617.73,475546.14,476820.49,477899.22,479746.44,482840.33,486280.36,490984.31,498417.4,505681.5,514302.77,524754.66,535206.55,550959.99,566368.77,584667.88,615728.98],
+      "1": [461388.41,446422.99,440641.33,435655.32,432732.57,430798.38,428786.45,427454.91,426197.84,425557.2,424574.45,424216.92,423660.21,423268.89,423000.03,422646.07,422780.88,422311.73,421805.9,421335.31,420994.81,420516.78,420070.07,419169.99,418902.61,418616.79,418903.39,418388.03,418112.79,417781.59,417575.76,417659.47,417274.75,417209.58,416976.63,417011.03,416996.12,417000.81,416882.27,416729.65,416767.88,416644.58,416646.43,416674.07,416674.56,416668.48,416557.56,416588.49,416605.17,416607.58,416695.97,416666.08,416699.76,416440.39,416482.31,416137.11,415987.55,416013.97,416006.89,416025.06,415977.85,416130.13,416082.49,416111.8,416146.33,416150.19,416382.04,416469.34,416576.83,416678.11,416739.12,416796.05,416841.49,416887.04,416935.54,416968.59,417041.49,417129.68,417327.12,417800.41,418001.36,419070.86,421751.87,422937.01,426483.54,428138.14,430046.14,434737.5,439836.74,442945.56,448607.13,450097.71,452436.08,455715.13,459430.5,462775.63,465391.2,468432.38,470332.23,471970.03,474784.93,479550.14,484721.94,491690.78,502300.12,512258.75,524096.34,538662.32,553228.3,573934.27,594852.17,617187.8,615728.98]
+    }
+  },
+  "lgb": {
+    "thresholds": [0.001,0.002,0.003,0.005,0.006,0.007,0.009,0.01,0.011,0.012,0.014,0.015,0.016,0.018,0.019,0.02,0.021,0.023,0.024,0.025,0.026,0.028,0.029,0.03,0.031,0.033,0.034,0.035,0.036,0.038,0.039,0.04,0.041,0.043,0.044,0.045,0.046,0.048,0.049,0.05,0.052,0.053,0.054,0.055,0.057,0.058,0.059,0.06,0.062,0.063,0.064,0.065,0.067,0.068,0.069,0.07,0.072,0.073,0.074,0.075,0.077,0.078,0.079,0.08,0.082,0.083,0.084,0.085,0.087,0.088,0.089,0.09,0.092,0.093,0.094,0.095,0.097,0.098,0.099,0.1,0.102,0.103,0.104,0.105,0.107,0.108,0.109,0.11,0.112,0.113,0.114,0.115,0.117,0.118,0.119,0.12,0.122,0.123,0.124,0.125],
+    "no_model_cost": 615728.98,
+    "cost_curves": {
+      "0.15": [531884.56,526151.44,519051.03,512555.89,508377.49,504999.11,501742.15,501111.57,500602.95,497523.3,494563.26,493026.56,492225.43,491105.53,490460.03,490032.91,489988.55,489994.2,489999.77,489993.75,489998.43,490010.86,490017.75,490025.32,490028.8,490044.96,490055.12,490066.76,490112.03,490139.98,490153.15,490170.16,490174.7,490258.9,490278.99,490314.97,490326.74,490392.16,490416.39,490453.3,490491.99,490543.82,490562.55,490629.72,490671.31,490698.3,490724.78,490748.11,490810.72,490832.03,490863.09,490888.69,490966.94,491008.73,491034.35,491064.48,491133.78,491155.76,491173.2,491195.86,491281.63,491342.45,491378.76,491413.94,491459.63,491486.48,491531.13,491572.18,491618.88,491654.05,491680.83,491716.23,491768.87,491796.93,491822.11,491856.59,491938.22,491979.37,492042.38,492079.52,492218.6,492275.71,492355.3,492495.44,492593.41,492683.14,492793.14,492933.12,493173.77,493460.74,493676.43,493975.23,494182.61,494426.8,494685.69,495044.46,495376.36,495760.62,496208.91,496651.13],
+      "0.2": [508547.59,503044.85,496237.53,490017.92,486003.4,482758.14,479643.22,479049.14,478567.92,475615.96,472784.56,471310.4,470547.81,469471.13,468854.73,468449.71,468420.35,468455.78,468475.72,468481.55,468497.06,468525.82,468541.99,468558.28,468567.29,468595.51,468614.29,468635.01,468692.1,468729.39,468748.77,468772.76,468781.67,468884.9,468914.62,468961.98,468980.05,469062.06,469094.82,469142.12,469192.18,469256.29,469281.63,469361.46,469412.93,469447.6,469481.46,469511.37,469589.34,469617.65,469656.68,469689.69,469785.7,469838.72,469872.31,469910.69,469995.82,470025.51,470049.36,470079.19,470182.23,470252.36,470296.14,470338.74,470394.1,470428.01,470482.13,470532.62,470589.36,470633.08,470666.99,470711.58,470774.99,470810.51,470842.52,470885.61,470984.54,471036.52,471113.94,471161.32,471329.32,471400.19,471497.59,471663.12,471780.35,471888.7,472019.41,472182.23,472458.62,472818.15,473074.3,473438.81,473691.71,473986.05,474302.13,474737.99,475152.46,475632.15,476187.46,476742.31],
+      "0.4": [468688.52,463574.16,457337.42,451637.63,447915.22,444903.81,442027.88,441480.78,441038.35,438269.88,435614.77,434229.62,433520.72,432505.51,431926.33,431548.54,431542.32,431620.9,431666.38,431690.81,431724.58,431786.8,431820.56,431852.98,431874.23,431933.36,431969.81,432006.41,432084.17,432137.82,432169.36,432207.31,432225.54,432360.78,432407.72,432475.43,432505.7,432620.18,432669.09,432734.34,432802.23,432887.5,432925.43,433027.9,433095.03,433142.37,433188.78,433229.91,433329.46,433369.11,433421.01,433465.62,433589.31,433659.82,433706.41,433757.84,433866.28,433908.31,433943.12,433984.52,434113.02,434199.03,434255.29,434309.83,434381.16,434426.31,434496.11,434561.22,434632.95,434690.55,434735.98,434793.8,434873.6,434920.16,434962.18,435016.96,435139.84,435209.44,435312.03,435377.01,435591.39,435684.52,435812.91,436021.96,436167.47,436301.73,436462.93,436661.63,436997.16,437475.47,437804.58,438281.47,438608.01,438985.23,439394.57,439956.09,440500.98,441147.36,441905.14,442632.51],
+      "0.45": [461387.63,456358.81,450224.68,444612.88,440940.46,437970.25,435131.82,434594.45,434159.56,431435.43,428822.15,427457.66,426761.89,425762.45,425192.43,424820.62,424821.51,424909.08,424962.08,424991.93,425031.2,425102.54,425142.22,425180.26,425205.02,425272.17,425313.99,425355.5,425440.44,425498.97,425533.86,425575.42,425596.09,425741.8,425794.55,425869.31,425903.26,426027.47,426081.57,426153.12,426227.15,426319.43,426361.65,426473.07,426546.37,426598.24,426649.04,426693.87,426801.99,426846.8,426903.88,426953.2,427087.97,427165.56,427218.22,427275.57,427394.46,427444.97,427485.96,427534.58,427677.22,427771.55,427834.39,427895.27,427974.41,428025.36,428102.5,428175.27,428254.56,428319.07,428370.58,428435.11,428523.52,428576.03,428623.24,428684.05,428818.75,428898.53,429015.97,429092.83,429339.86,429453.99,429610.96,429862.9,430038.08,430196.31,430385.79,430619.02,431015.93,431600.16,432012.52,432609.96,433027.44,433502.67,434022.98,434730.89,435430.28,436251.69,437226.02,438172.35],
+      "0.6": [445185.25,440319.57,434444.87,429068.57,425553.75,422712.28,419999.99,419502.13,419100.88,416553.93,414115.13,412847.29,412210.45,411283.48,410759.09,410420.42,410452.27,410596.17,410682.62,410736.45,410800.05,410922.18,410987.59,411050.96,411092.64,411207.17,411278.78,411348.53,411467.61,411552.47,411604.52,411666.01,411701.31,411901.42,411983.75,412092.7,412153.22,412329.74,412413.87,412524.47,412637.2,412766.97,412831.68,412990.98,413094.47,413166.96,413236.56,413296.94,413442.17,413506.86,413584.42,413652.2,413836.97,413946.79,414023.85,414103.5,414263.02,414338.38,414398.39,414467.69,414654.13,414776.63,414858.73,414938.24,415041.68,415112.14,415216.55,415315.82,415420.76,415507.31,415577.7,415664.31,415783.82,415857.73,415923.76,416005.61,416181.85,416295.95,416461.52,416573.88,416925.73,417084.95,417302.63,417651,417896.13,418117.32,418389.71,418723.01,419299.26,420157.83,420742.52,421615.76,422214.46,422880.75,423612.22,424612.81,425604.46,426768.11,428186.31,429465.53],
+      "0.8": [418374.29,413601.73,407898.73,402694.73,399296.89,396550.39,393938.81,393477.1,393108.65,390729.89,388456.5,387279.54,386700.61,385841.49,385361.22,385055.13,385116.75,385315.41,385435.27,385514.29,385603.5,385777.19,385870.59,385959.67,386020.21,386185.27,386290.06,386389.51,386548.31,386663.56,386735.77,386820.73,386874.08,387136.58,387256.55,387414.23,387506.81,387750.53,387873.4,388032.78,388193.53,388369.4,388464.3,388683.24,388825.87,388926.47,389021.61,389103.29,389301.17,389394.6,389501.27,389594.66,389847.02,389999.49,390109.29,390220.61,390433.48,390541.14,390626.8,390724.83,390969.85,391131.1,391240.28,391345.43,391480.55,391578.49,391718.33,391850.38,391987.94,392101.76,392196.08,392311.71,392471.4,392574.26,392666.98,392779.31,393015.88,393181.81,393419.84,393589.3,394116.62,394356.78,394702.8,395267.42,395646.76,395999.31,396414.79,396900.74,397752.26,398962.25,399797.29,401018.5,401868.27,402809.24,403851.08,405259.44,406664.06,408292.36,410275.95,412065.85],
+      "1": [391563.32,386883.79,381352.65,376321.15,373040.01,370388.38,367877.45,367451.79,367116.09,364905.6,362797.58,361711.51,361190.36,360398.72,359962.71,359689.69,359781.08,360034.76,360188.15,360292.44,360407.21,360632.64,360754.03,360868.98,360948.25,361164.01,361302.07,361431.26,361630.13,361775.97,361869.52,361978.51,362050.41,362376.05,362533.99,362741.17,362866.53,363178.67,363341.14,363550.06,363760.68,363984.27,364110.46,364390.95,364574.33,364704.19,364825.99,364930.11,365182.38,365306.67,365444.09,365565.13,365887.09,366084.5,366229.17,366374.96,366647.83,366790.89,366904.67,367034.31,367346.24,367549.58,367688.67,367822.13,367992.3,368121.42,368300.21,368469.3,368643.09,368790.74,368911.16,369058.02,369262.87,369400.55,369525.19,369672.21,369978.9,370206.54,370532.31,370775.77,371509.83,371856.5,372358.76,373180.66,373728.65,374244.63,374833.24,375509.63,376696.56,378348.82,379520.34,381208.61,382411.84,383740.95,385226.04,387192.71,389165.87,391596.68,394506.58,397292.56]
+    },
+    "best_threshold": 0.3377758910388396,
+    "best_cost": 479585.57
+  },
+  "retention_rates": [0.15, 0.2, 0.4, 0.45, 0.6, 0.8, 1.0],
+  "FN_cost": 997.94,
+  "FP_cost": 89.33,
+  "revenue": {
+    "total_monthly_revenue": 455661.0,
+    "monthly_rev_at_risk": 139130.85,
+    "annual_rev_at_risk": 1669570.2,
+    "avg_revenue_per_account": 64.8,
+    "churned_percentage": 26.6
+  }
+};
+
+const MODEL_DATA = [
+  {"approach": "RF Baseline", "recall": 0.48, "precision": 0.64, "pr_auc": 0.6107},
+  {"approach": "RF + class_weight='balanced'", "recall": 0.48, "precision": 0.64, "pr_auc": 0.6148},
+  {"approach": "LightGBM (scale_pos_weight)", "recall": 0.75, "precision": 0.53, "pr_auc": 0.6533},
+  {"approach": "Undersampling + RF", "recall": 0.76, "precision": 0.51, "pr_auc": 0.611},
+  {"approach": "Bootstrap Oversampling + RF", "recall": 0.58, "precision": 0.59, "pr_auc": 0.5998},
+  {"approach": "SMOTE + RF", "recall": 0.58, "precision": 0.58, "pr_auc": 0.5913},
+  {"approach": "GBDT + Undersampling", "recall": 0.77, "precision": 0.5, "pr_auc": 0.6317}
+];
+
+const COST_PARAMS = {
+  fn_cost: 997.94,
+  fp_cost: 89.33,
+  retention_p: 0.45,
+  threshold_recs: [
+    {retention_rate: "> 20%", threshold: "0.1 – 0.3", rationale: "Aggressive: catch more churners since retention is effective"},
+    {retention_rate: "< 20%", threshold: "0.4 – 0.8", rationale: "Conservative: only intervene when confident, since retention rarely works"}
+  ]
+};
+
+const RETENTION_LABELS = {
+  0.15: "15%", 0.20: "20%", 0.40: "40%",
+  0.45: "45% (HBR)", 0.60: "60%", 0.80: "80%", 1.0: "100%"
+};
+
+const RETENTION_COLORS = {
+  0.15: "#d32f2f", 0.20: "#f57c00", 0.40: "#fbc02d",
+  0.45: "#1B5E20", 0.60: "#388e3c", 0.80: "#1976d2", 1.0: "#7b1fa2"
+};
+
+const CHART_COLORS = ['#4C72B0','#DD8452','#55A868','#C44E52','#8172B3','#937860','#CCB974','#64B5CD'];
+
+function fmt(v, t) {
+  if (t === 'currency') {
+    if (v >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
+    if (v >= 1e3) return '$' + (v/1e3).toFixed(1) + 'K';
+    return '$' + v.toFixed(0);
+  }
+  if (t === 'percent') return (v*100).toFixed(1) + '%';
+  if (t === 'pct') return v.toFixed(1) + '%';
+  if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v/1e3).toFixed(1) + 'K';
+  return Number(v).toLocaleString();
+}
+
+// Pre-computed revenue aggregates (from full dataset of 7032 customers)
+const REV_DATA = {"contract":{"labels":["Month-to-month","One year","Two year"],"active":[136447.05,81678.45,98404.65],"churned":[120847.1,14118.45,4165.3]},"tenure":{"labels":["0-5","6-11","12-17","18-23","24-29","30-35","36-41","42-47","48-53","54-59","60-65","66-71"],"values":[46852.7,19169.6,14762.6,9380.9,8446.1,7716.15,6685.15,5733.1,5581.45,5208.75,3392.15,6202.2]},"internet":{"labels":["DSL","Fiber optic","No"],"values":[22529.2,114300.05,2301.6]},"payment":{"labels":["Mailed check","Electronic check","Bank transfer (automatic)","Credit card (automatic)"],"values":[16803.6,84288.75,20091.9,17946.6]},"kpis":{"total_monthly_revenue":455661,"monthly_rev_at_risk":139130.85,"annual_rev_at_risk":1669570.2,"avg_revenue_per_account":64.8,"churned_percentage":26.6}};
+
+// ==================== DASHBOARD CLASS ====================
+class Dashboard {
+  constructor() {
+    this.charts = {};
+    this.revData = REV_DATA;
+    document.getElementById('data-date').textContent = new Date().toLocaleDateString();
+    this.init();
+  }
+
+  init() {
+    this.renderKPIs();
+    this.renderRFCostChart();
+    this.renderLGBCostChart();
+    this.renderRevenueCharts();
+    this.renderBottom();
+  }
+
+  renderKPIs() {
+    const r = this.revData.kpis;
+    document.getElementById('kpi-total-rev').textContent = fmt(r.total_monthly_revenue, 'currency');
+    document.getElementById('kpi-rev-risk').textContent = fmt(r.monthly_rev_at_risk, 'currency');
+    document.getElementById('kpi-rev-risk-pct').textContent = r.churned_percentage + '% of total';
+    document.getElementById('kpi-annual-risk').textContent = fmt(r.annual_rev_at_risk, 'currency');
+
+    // Full-dataset model figures from notebook
+    const noModel = 1865150;
+    const modelCost = 1441965;
+    const savings = 423185;
+    const savingsPct = 22.69;
+
+    document.getElementById('kpi-no-model').textContent = fmt(noModel, 'currency');
+    document.getElementById('kpi-model-cost').textContent = fmt(modelCost, 'currency');
+    document.getElementById('kpi-savings').textContent = fmt(savings, 'currency');
+    document.getElementById('kpi-savings-pct').textContent = '+' + savingsPct + '% vs no-model';
+  }
+
+  renderRFCostChart() {
+    const data = COST_DATA.rf;
+    const rates = COST_DATA.retention_rates;
+    const ctx = document.getElementById('chart-cost-rf').getContext('2d');
+    if (this.charts.costRf) this.charts.costRf.destroy();
+
+    const datasets = [];
+    rates.forEach(r => {
+      const color = RETENTION_COLORS[r];
+      const dash = r === 0.45 ? [6, 3] : [];
+      datasets.push({
+        label: RETENTION_LABELS[r],
+        data: data.cost_curves[String(r)].map((c, i) => ({ x: data.thresholds[i], y: c })),
+        borderColor: color,
+        backgroundColor: 'transparent',
+        borderWidth: r === 0.45 ? 2.5 : 1.5,
+        borderDash: dash,
+        pointRadius: 0,
+        tension: 0.3,
+      });
+    });
+
+    // No-model line
+    datasets.push({
+      label: 'No model',
+      data: data.thresholds.map(t => ({ x: t, y: data.no_model_cost })),
+      borderColor: '#000',
+      borderWidth: 2,
+      borderDash: [5, 5],
+      pointRadius: 0,
+    });
+
+    this.charts.costRf = new Chart(ctx, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', labels: { usePointStyle: true, padding: 15, font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: ctx => ctx.dataset.label + ': ' + fmt(ctx.parsed.y, 'currency')
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            title: { display: true, text: 'Threshold', font: { size: 11 } },
+            min: 0, max: 1,
+            grid: { display: false },
+            ticks: { font: { size: 10 } }
+          },
+          y: {
+            title: { display: true, text: 'Total Cost ($)', font: { size: 11 } },
+            ticks: { callback: v => fmt(v, 'currency'), font: { size: 10 } },
+            grid: { color: '#f0f0f0' }
+          }
+        }
+      }
+    });
+  }
+
+  renderLGBCostChart() {
+    const data = COST_DATA.lgb;
+    const ctx = document.getElementById('chart-cost-lgb').getContext('2d');
+    if (this.charts.costLgb) this.charts.costLgb.destroy();
+
+    const thresholds = data.thresholds;
+    const costs45 = data.cost_curves['0.45'];
+    const bestTh = data.best_threshold;
+    const bestCost = data.best_cost;
+
+    this.charts.costLgb = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'Total Cost (45% retention)',
+            data: thresholds.map((t, i) => ({ x: t, y: costs45[i] })),
+            borderColor: '#1B5E20',
+            backgroundColor: 'rgba(27,94,32,0.08)',
+            borderWidth: 2.5,
+            fill: true,
+            pointRadius: 0,
+            tension: 0.3,
+          },
+          {
+            label: 'No model',
+            data: thresholds.map(t => ({ x: t, y: data.no_model_cost })),
+            borderColor: '#000',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            pointRadius: 0,
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', labels: { usePointStyle: true, padding: 15, font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: ctx => ctx.dataset.label + ': ' + fmt(ctx.parsed.y, 'currency')
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            title: { display: true, text: 'Threshold', font: { size: 11 } },
+            min: 0, max: 1,
+            grid: { display: false },
+            ticks: { font: { size: 10 } }
+          },
+          y: {
+            title: { display: true, text: 'Total Cost ($)', font: { size: 11 } },
+            ticks: { callback: v => fmt(v, 'currency'), font: { size: 10 } },
+            grid: { color: '#f0f0f0' }
+          }
+        }
+      },
+      plugins: [{
+        id: 'lgbAnnotations',
+        afterDraw(chart) {
+          const ctx2 = chart.ctx;
+          const xScale = chart.scales.x;
+          const yScale = chart.scales.y;
+          if (!xScale || !yScale) return;
+
+          const xBest = xScale.getPixelForValue(bestTh);
+          const yBest = yScale.getPixelForValue(bestCost);
+
+          // Vertical line
+          ctx2.save();
+          ctx2.setLineDash([4, 4]);
+          ctx2.strokeStyle = '#C44E52';
+          ctx2.lineWidth = 1.5;
+          ctx2.beginPath();
+          ctx2.moveTo(xBest, yScale.top);
+          ctx2.lineTo(xBest, yScale.bottom);
+          ctx2.stroke();
+          ctx2.setLineDash([]);
+
+          // Best point circle
+          ctx2.fillStyle = '#C44E52';
+          ctx2.beginPath();
+          ctx2.arc(xBest, yBest, 5, 0, 2 * Math.PI);
+          ctx2.fill();
+          ctx2.strokeStyle = '#fff';
+          ctx2.lineWidth = 2;
+          ctx2.stroke();
+
+          // Annotation box
+          const boxX = xBest + 10;
+          const boxY = yBest - 40;
+          ctx2.fillStyle = 'rgba(255,255,255,0.95)';
+          ctx2.shadowColor = 'rgba(0,0,0,0.1)';
+          ctx2.shadowBlur = 6;
+          ctx2.beginPath();
+          ctx2.roundRect(boxX, boxY, 195, 55, 4);
+          ctx2.fill();
+          ctx2.shadowBlur = 0;
+          ctx2.strokeStyle = '#dee2e6';
+          ctx2.lineWidth = 1;
+          ctx2.beginPath();
+          ctx2.roundRect(boxX, boxY, 195, 55, 4);
+          ctx2.stroke();
+
+          ctx2.fillStyle = '#C44E52';
+          ctx2.font = 'bold 11px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif';
+          ctx2.fillText('Optimal threshold: ' + bestTh.toFixed(3), boxX + 8, boxY + 15);
+          ctx2.fillStyle = '#212529';
+          ctx2.font = '11px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif';
+          ctx2.fillText('Model cost: ' + fmt(bestCost, 'currency'), boxX + 8, boxY + 31);
+          ctx2.fillStyle = '#1B5E20';
+          ctx2.font = 'bold 11px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif';
+          ctx2.fillText('Savings vs no-model: ~$423K', boxX + 8, boxY + 47);
+
+          ctx2.restore();
+        }
+      }]
+    });
+  }
+
+  renderRevenueCharts() {
+    this.renderRevContract();
+    this.renderRevTenure();
+    this.renderRevInternet();
+    this.renderRevPayment();
+  }
+
+  renderRevContract() {
+    const d = this.revData.contract;
+    const labels = d.labels;
+    const active = d.active;
+    const churned = d.churned;
+
+    const ctx = document.getElementById('chart-rev-contract').getContext('2d');
+    if (this.charts.revContract) this.charts.revContract.destroy();
+    this.charts.revContract = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Active Revenue', data: active, backgroundColor: '#A6CFD3CC', borderColor: '#A6CFD3', borderWidth: 1, borderRadius: 3 },
+          { label: 'Churned Revenue', data: churned, backgroundColor: '#0B307FCC', borderColor: '#0B307F', borderWidth: 1, borderRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { usePointStyle: true, padding: 15, font: { size: 11 } } },
+          tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + fmt(ctx.parsed.y, 'currency') } }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, ticks: { callback: v => fmt(v, 'currency'), font: { size: 10 } } }
+        }
+      }
+    });
+  }
+
+  renderRevTenure() {
+    const d = this.revData.tenure;
+    const buckets = d.labels;
+    const churnedRev = d.values;
+
+    const ctx = document.getElementById('chart-rev-tenure').getContext('2d');
+    if (this.charts.revTenure) this.charts.revTenure.destroy();
+    this.charts.revTenure = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: buckets,
+        datasets: [{
+          label: 'Monthly Rev at Risk',
+          data: churnedRev,
+          backgroundColor: churnedRev.map(v => v > 15000 ? '#0B307FCC' : '#A6CFD3CC'),
+          borderColor: '#0B307F',
+          borderWidth: 1,
+          borderRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.y, 'currency') + ' / mo' } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } },
+          y: { beginAtZero: true, ticks: { callback: v => fmt(v, 'currency'), font: { size: 10 } } }
+        }
+      }
+    });
+  }
+
+  renderRevInternet() {
+    const d = this.revData.internet;
+    const labels = d.labels;
+    const values = d.values;
+
+    const ctx = document.getElementById('chart-rev-internet').getContext('2d');
+    if (this.charts.revInternet) this.charts.revInternet.destroy();
+    this.charts.revInternet = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: CHART_COLORS.map(c => c + 'CC'),
+          borderColor: '#ffffff',
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '55%',
+        plugins: {
+          legend: { position: 'right', labels: { usePointStyle: true, padding: 12, font: { size: 10 } } },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+                const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                return ctx.label + ': ' + fmt(ctx.parsed, 'currency') + ' / mo (' + pct + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  renderRevPayment() {
+    const d = this.revData.payment;
+    const labels = d.labels;
+    const values = d.values;
+
+    const ctx = document.getElementById('chart-rev-payment').getContext('2d');
+    if (this.charts.revPayment) this.charts.revPayment.destroy();
+    this.charts.revPayment = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Churned Revenue ($/mo)',
+          data: values,
+          backgroundColor: CHART_COLORS.map(c => c + 'CC'),
+          borderColor: CHART_COLORS,
+          borderWidth: 1,
+          borderRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.x, 'currency') + ' / mo' } }
+        },
+        scales: {
+          x: { beginAtZero: true, ticks: { callback: v => fmt(v, 'currency'), font: { size: 10 } } },
+          y: { grid: { display: false }, ticks: { font: { size: 9 } } }
+        }
+      }
+    });
+  }
+
+  renderBottom() {
+    // Model table
+    const bestAuc = Math.max(...MODEL_DATA.map(m => m.pr_auc));
+    let mhtml = '<table class="cost-table"><thead><tr><th>Approach</th><th>Recall</th><th>Precision</th><th>PR-AUC</th></tr></thead><tbody>';
+    MODEL_DATA.forEach(m => {
+      const isBest = m.pr_auc === bestAuc;
+      const rStyle = isBest ? ' class="best-model"' : '';
+      mhtml += '<tr><td' + rStyle + '>' + m.approach + '</td><td>' + (m.recall * 100).toFixed(0) + '%</td><td>' + (m.precision * 100).toFixed(0) + '%</td><td' + rStyle + '>' + m.pr_auc.toFixed(4) + '</td></tr>';
+    });
+    mhtml += '</tbody></table>';
+    document.getElementById('model-table').innerHTML = mhtml;
+
+    // Cost analysis
+    const c = COST_PARAMS;
+    let chtml = '<table class="cost-table"><tbody>';
+    chtml += '<tr><td>False Negative Cost</td><td class="cost-value">$' + c.fn_cost.toFixed(2) + '</td></tr>';
+    chtml += '<tr><td>False Positive Cost</td><td class="cost-value">$' + c.fp_cost.toFixed(2) + '</td></tr>';
+    chtml += '<tr><td>Retention Rate (assumed)</td><td class="cost-value">' + (c.retention_p * 100).toFixed(0) + '%</td></tr>';
+    chtml += '</tbody></table>';
+    chtml += '<div style="margin-top:14px;font-size:12px;"><strong>Threshold Recommendations</strong></div>';
+    chtml += '<table class="cost-table" style="margin-top:4px;"><thead><tr><th>Retention Rate</th><th>Threshold</th><th>Rationale</th></tr></thead><tbody>';
+    c.threshold_recs.forEach(tr => {
+      chtml += '<tr><td>' + tr.retention_rate + '</td><td>' + tr.threshold + '</td><td style="font-size:11px;color:var(--text-secondary);">' + tr.rationale + '</td></tr>';
+    });
+    chtml += '</tbody></table>';
+    chtml += '<div style="margin-top:12px;font-size:11px;color:var(--text-secondary);border-top:1px solid #f0f0f0;padding-top:10px;">';
+    chtml += '<strong>Note:</strong> The 45% retention rate is an estimate from Harvard Business Review (p.22). ';
+    chtml += '<strong>Must be A/B tested</strong> in production to validate. Below ~20%, the model may not be cost-effective.';
+    chtml += '</div>';
+    document.getElementById('cost-container').innerHTML = chtml;
+  }
+}
+
+const dashboard = new Dashboard();
+</script>
+</body>
+</html>
