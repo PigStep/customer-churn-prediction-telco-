@@ -3,7 +3,9 @@
 from pathlib import Path
 
 import pandas as pd
+import sklearn
 from sklearn.compose import ColumnTransformer
+import sklearn.compose
 from sklearn.preprocessing import OneHotEncoder
 
 CAT_COLS = [
@@ -46,7 +48,7 @@ def load_data(path=None)->pd.DataFrame:
     return df
 
 
-def make_features(df):
+def make_features(df)->tuple[pd.DataFrame, pd.Series]:
     X = df.drop(columns="Churn")
     y = df["Churn"]
     return X, y
