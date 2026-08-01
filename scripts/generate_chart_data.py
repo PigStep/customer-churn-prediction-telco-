@@ -1,123 +1,49 @@
 """Regenerate COST_DATA for telco_churn_financial.html.
 
-Reproduces notebooks/Baseline.ipynb (cell 43) on the monthly test-set basis:
+Full-dataset basis matching notebooks/Model.ipynb headline numbers:
 
-  * 33% hold-out split (train_test_split, random_state=42, stratified)
-  * RF baseline: RandomForestClassifier(random_state=42)
-  * LightGBM: LGBMClassifier(scale_pos_weight=minor_ratio, verbose=-1, random_state=42)
-  * precision/recall at the real score thresholds
-  * cost model:
-        cost(p) = FN*FN_cost + FP_cost*FP + (FP_cost + (1-p)*FN_cost)*TP
-      with FN_cost=997.94, FP_cost=89.33,
-      retention rates [0.15, 0.2, 0.4, 0.45, 0.6, 0.8, 1.0]
+  * RF baseline: RandomForestClassifier(random_state=42), 5-fold stratified
+    out-of-fold predictions (cross_val_predict, StratifiedKFold random_state=42)
+  * LightGBM: Optuna-tuned via nested_cv_with_optuna (5 outer folds, 50 trials,
+    average_precision_score) -> full-dataset OOF probabilities
+  * cost model (Baseline.ipynb cell 43):
+        cost(p) = FN*997.94 + 89.33*FP + (89.33 + (1-p)*997.94)*TP
+    with retention rates [0.15, 0.2, 0.4, 0.45, 0.6, 0.8, 1.0]
+  * no-model cost = 1869 churners * 997.94 = $1,865,150
 
 Writes scripts/generated_cost_data.json and patches the COST_DATA block
 embedded in telco_churn_financial.html. Fails loudly if the results drift
-from the numbers verified against the notebook.
+from the notebook-verified pins.
 """
 
-import json
-import re
 import sys
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
-import lightgbm as lgb
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import precision_recall_curve
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import average_precision_score, precision_recall_curve
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
+
+from churn.cost import RETENTION_RATES, no_model_cost, rate_key
+from churn.data import load_data, make_features
+from churn.models import make_pipeline, rf_baseline
+from churn.report import build_cost_data, build_block, patch_html, write_json
+from churn.tuning import nested_cv_with_optuna
 
 ROOT = Path(__file__).resolve().parents[1]
-HTML_PATH = ROOT / "telco_churn_financial.html"
-JSON_PATH = ROOT / "scripts" / "generated_cost_data.json"
-
-FN_COST = 997.94
-FP_COST = 89.33
-RETENTION_RATES = [0.15, 0.2, 0.4, 0.45, 0.6, 0.8, 1.0]
-MAX_PLOT_POINTS = 250
-
-CAT_COLS = [
-    "gender", "Partner", "Dependents", "PhoneService", "MultipleLines",
-    "InternetService", "OnlineSecurity", "OnlineBackup", "DeviceProtection",
-    "TechSupport", "StreamingTV", "StreamingMovies", "Contract",
-    "PaperlessBilling", "PaymentMethod", "Churn",
-]
-
-
-def load_data():
-    df = pd.read_csv(ROOT / "data" / "dataset.csv")
-    for col in CAT_COLS:
-        df[col] = df[col].astype("category")
-    df["SeniorCitizen"] = df["SeniorCitizen"] == 1
-    df["Churn"] = df["Churn"] == "Yes"
-    df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
-    df = df.dropna()
-    df = df.drop(columns="customerID")
-    return pd.get_dummies(df)
-
-
-def rate_key(p):
-    """Match JS String(p) so the browser's cost_curves[String(r)] lookup works."""
-    return "{:g}".format(p)
-
-
-def cost_curves(y_true, y_score, rates):
-    """Return {thresholds: [...], curves: {rate_key: [...]}} sorted ascending."""
-    precision, recall, thresholds = precision_recall_curve(y_true, y_score)
-    thresholds = np.concatenate(([0.0], thresholds))  # align full-predict point
-    P = int(y_true.sum())
-    TP = recall * P
-    FN = P - TP
-    FP = TP * (1.0 / precision - 1.0)
-
-    curves = {}
-    for p in rates:
-        cost_tp = FP_COST + (1 - p) * FN_COST
-        curves[rate_key(p)] = FN * FN_COST + FP_COST * FP + cost_tp * TP
-
-    order = np.argsort(thresholds)
-    thresholds = thresholds[order]
-    curves = {k: np.asarray(v)[order] for k, v in curves.items()}
-    return thresholds, curves
-
-
-def downsample(thresholds, curves, best_idx):
-    """Reduce the number of points and keep with best threshold"""
-    n = len(thresholds)
-    idx = np.unique(np.linspace(0, n - 1, min(n, MAX_PLOT_POINTS)).astype(int))
-    idx = np.unique(np.concatenate((idx, [best_idx]))).astype(int)
-    return thresholds[idx], {k: v[idx] for k, v in curves.items()}
-
-
-def model_block(name, model):
-    model.fit(X_train, y_train)
-    y_score = model.predict_proba(X_test)[:, 1]
-    P = int(y_test.sum())
-    thresholds, curves = cost_curves(y_test, y_score, RETENTION_RATES)
-
-    c45 = curves[rate_key(0.45)]
-    best_idx = int(np.argmin(c45))
-    best_threshold = float(thresholds[best_idx])
-    best_cost = round(float(c45[best_idx]), 2)
-
-    plot_th, plot_curves = downsample(thresholds, curves, best_idx)
-    print(f"[{name}] {name} done: P={P}, best_threshold={best_threshold:.4f}, best_cost={best_cost:,.2f}")
-    return {
-        "thresholds": [round(float(t), 6) for t in plot_th],
-        "no_model_cost": round(P * FN_COST, 2),
-        "cost_curves": {k: [round(float(v), 2) for v in vals] for k, vals in plot_curves.items()},
-        "best_threshold": best_threshold,
-        "best_cost": best_cost,
-    }
 
 
 def verify(name, block, min_expectations, frac_expectations):
     rates = list(RETENTION_RATES)
-    frac_below = {r: np.mean(np.asarray(block["cost_curves"][rate_key(r)]) < block["no_model_cost"]) for r in rates}
+    frac_below = {
+        r: np.mean(np.asarray(block["cost_curves"][rate_key(r)]) < block["no_model_cost"])
+        for r in rates
+    }
     mins = {r: min(block["cost_curves"][rate_key(r)]) for r in rates}
-    print(f"[verify] {name}: no_model={block['no_model_cost']:,.2f} min15={mins[0.15]:,.2f} "
-          f"frac_below15={frac_below[0.15]:.2f} min45={mins[0.45]:,.2f} min100={mins[1.0]:,.2f}")
+    print(
+        f"[verify] {name}: no_model={block['no_model_cost']:,.2f} "
+        f"min15={mins[0.15]:,.2f} frac_below15={frac_below[0.15]:.2f} "
+        f"min45={mins[0.45]:,.2f} min100={mins[1.0]:,.2f}"
+    )
     for key, (lo, hi) in min_expectations.items():
         if not (lo <= mins[key] <= hi):
             raise SystemExit(f"[verify] FAIL {name} mins[{key}]={mins[key]:.2f} outside [{lo}, {hi}]")
@@ -129,56 +55,64 @@ def verify(name, block, min_expectations, frac_expectations):
 
 def main():
     df = load_data()
-    X = df.drop(columns="Churn")
-    y = df["Churn"]
-    global X_train, X_test, y_train, y_test
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.33, random_state=42, stratify=y)
+    X, y = make_features(df)
+    print(f"[data] {len(df)} rows, {int(y.sum())} churners")
 
-    minor_ratio = (y == False).sum() / (y == True).sum()
-    rf = RandomForestClassifier(random_state=42)
-    lgbm = lgb.LGBMClassifier(scale_pos_weight=minor_ratio, verbose=-1, random_state=42)
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    rf_pipe = rf_baseline(X)
+    rf_oof = cross_val_predict(rf_pipe, X, y, cv=skf, method="predict_proba")[:, 1]
+    print("[rf] RF OOF probabilities done")
 
-    rf_block = model_block("rf", rf)
-    lgb_block = model_block("lgb", lgbm)
+    lgb_pipe = make_pipeline(X, "lgb")
+    _, _, _, lgb_oof = nested_cv_with_optuna(
+        X, y, lgb_pipe, average_precision_score, n_trials=50, n_outer=5
+    )
+    print("[lgb] Optuna nested-CV OOF probabilities done")
 
+    rf_block = build_block(y, rf_oof)
+    lgb_block = build_block(y, lgb_oof)
+
+    np.savez(ROOT / "scripts" / "oof_proba.npz", rf=rf_oof, lgb=lgb_oof)
+
+    precision, recall, thresholds = precision_recall_curve(y, lgb_oof)
+    best_idx = int(np.argmin(np.abs(thresholds - lgb_block["best_threshold"])))
+    print(
+        f"[metrics] lgb: pr_auc={average_precision_score(y, lgb_oof):.4f} "
+        f"recall={recall[best_idx]:.2f} precision={precision[best_idx]:.2f}"
+    )
+
+    expected_no_model = no_model_cost(y)
+    for name, block in (("rf", rf_block), ("lgb", lgb_block)):
+        if abs(block["no_model_cost"] - expected_no_model) > 0.01:
+            raise SystemExit(
+                f"[verify] FAIL {name} no_model_cost={block['no_model_cost']:.2f} != {expected_no_model:.2f}"
+            )
+
+    #FIXME: Why hardcode there?
     verify(
         "rf", rf_block,
-        {0.15: (610000.0, 613000.0), 0.45: (484000.0, 488000.0), 1.0: (170000.0, 182000.0)},
-        {0.15: (0.40, 0.55), 0.45: (0.98, 1.0)},
+        {0.15: (1_840_000.0, 1_860_000.0), 0.45: (1_440_000.0, 1_490_000.0), 1.0: (500_000.0, 560_000.0)},
+        {0.15: (0.45, 0.65), 0.45: (0.98, 1.0)},
     )
-    verify(
-        "lgb", lgb_block,
-        {0.15: (605000.0, 613000.0), 0.45: (477000.0, 483000.0), 1.0: (160000.0, 175000.0)},
-        {0.15: (0.15, 0.35), 0.45: (0.98, 1.0)},
+    best_th = lgb_block["best_threshold"]
+    best_cost = lgb_block["best_cost"]
+    savings = lgb_block["no_model_cost"] - best_cost
+    print(
+        f"[verify] lgb: best_threshold={best_th:.4f} best_cost={best_cost:,.2f} "
+        f"savings={savings:,.2f} ({savings / lgb_block['no_model_cost'] * 100:.2f}%)"
     )
+    # Threshold near the cost optimum is flat, so allow generous drift from the
+    # notebook's published 0.1597 (its Optuna run was unseeded).
+    if not (0.10 <= best_th <= 0.25):
+        raise SystemExit(f"[verify] FAIL lgb best_threshold={best_th:.4f} outside [0.10, 0.25]")
+    if not (405_000.0 <= savings <= 435_000.0):
+        raise SystemExit(f"[verify] FAIL lgb savings={savings:,.2f} outside [405000, 435000]")
+    print(f"[metrics] lgb: pr_auc={average_precision_score(y, lgb_oof):.4f}")
 
-    cost_data = {
-        "rf": rf_block,
-        "lgb": lgb_block,
-        "retention_rates": RETENTION_RATES,
-        "FN_cost": FN_COST,
-        "FP_cost": FP_COST,
-        "revenue": {
-            "total_monthly_revenue": 455661.0,
-            "monthly_rev_at_risk": 139130.85,
-            "annual_rev_at_risk": 1669570.2,
-            "avg_revenue_per_account": 64.8,
-            "churned_percentage": 26.6,
-        },
-    }
-
-    JSON_PATH.write_text(json.dumps(cost_data, indent=2))
-    print(f"[write] {JSON_PATH}")
-
-    html = HTML_PATH.read_text()
-    new_block = "const COST_DATA = " + json.dumps(cost_data, indent=2) + ";\n"
-    pattern = re.compile(r"const COST_DATA = \{.*?\n\};", re.DOTALL)
-    if not pattern.search(html):
-        raise SystemExit("[fail] COST_DATA block not found in HTML")
-    html = pattern.sub(lambda m: new_block.rstrip("\n"), html, count=1)
-    HTML_PATH.write_text(html)
-    print(f"[patch] COST_DATA embedded in {HTML_PATH}")
+    cost_data = build_cost_data(rf_block, lgb_block)
+    write_json(cost_data)
+    patch_html(cost_data)
+    return 0
 
 
 if __name__ == "__main__":
