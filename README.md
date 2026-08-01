@@ -10,6 +10,17 @@ Predicting customer churn for a telecom company using machine learning, with cos
 
 ```
 customer-churn-prediction-telco-/
+├── src/churn/
+│   ├── __init__.py
+│   ├── data.py            # Data loading & preprocessing (category/bool coercion)
+│   ├── models.py          # sklearn Pipelines (ColumnTransformer + estimator step)
+│   ├── tuning.py          # Optuna tuning + nested-CV OOF (Model.ipynb port)
+│   ├── cost.py            # Cost model (FN $997.94 / FP $89.33) & cost curves
+│   └── report.py          # COST_DATA builder, JSON output, HTML patching
+├── scripts/
+│   ├── generate_chart_data.py   # Regenerates dashboard COST_DATA (full-dataset OOF basis)
+│   ├── generated_cost_data.json # Latest embedded data
+│   └── oof_proba.npz           # Out-of-fold probabilities (rf/lgb)
 ├── notebooks/
 │   ├── EDA.ipynb          # Exploratory data analysis & feature insights
 │   ├── Baseline.ipynb     # Model baselines & imbalance handling experiments
@@ -22,7 +33,7 @@ customer-churn-prediction-telco-/
 │   └── config.toml        # Streamlit custom theme config
 ├── telco_churn_dashboard.html  # Interactive HTML dashboard
 ├── AGENTS.md              # Agent instructions for AI coding assistants
-├── pyproject.toml         # Python project config (uv, streamlit)
+├── pyproject.toml         # Python project config (uv, hatchling, streamlit)
 ├── README.md
 └── .gitignore
 ```
