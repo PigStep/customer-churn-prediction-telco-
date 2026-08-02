@@ -38,6 +38,25 @@ def costs_from_curve(precision, recall, P, rate)->list:
     return FN * FN_COST + FP_COST * FP + (FP_COST + (1 - rate) * FN_COST) * TP
 
 
+def aligned_cost_curves(y_true, y_score, rates=None):
+    """(thresholds ascending incl. 0.0, {rate_key: cost array}) for all rates.
+
+    Single shared implementation of the PR-curve -> per-rate cost conversion. 
+    Adds a 0.0 threshold for the
+    full-predict point, then sorts ascending so every rate's costs align.
+    """
+    precision, recall, thresholds = precision_recall_curve(y_true, y_score)
+    thresholds = np.concatenate(([0.0], thresholds))  # align full-predict point
+    P = int(y_true.sum())
+    rates = rates or RETENTION_RATES
+    curves = {
+        rate_key(p): np.asarray(costs_from_curve(precision, recall, P, p))
+        for p in rates
+    }
+    order = np.argsort(thresholds)
+    return thresholds[order], {k: v[order] for k, v in curves.items()}
+
+
 def cost_curve(y_true, y_proba, rate)->list[dict]:
     """Cost over every PR-curve threshold for one retention rate.
 
