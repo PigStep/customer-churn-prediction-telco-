@@ -5,9 +5,8 @@ import re
 from pathlib import Path
 
 import numpy as np
-from sklearn.metrics import precision_recall_curve
 
-from churn.cost import FN_COST, FP_COST, RETENTION_RATES, costs_from_curve, rate_key
+from churn.cost import FN_COST, FP_COST, RETENTION_RATES, aligned_cost_curves, rate_key
 
 ROOT = Path(__file__).resolve().parents[2]
 HTML_PATH = ROOT / "telco_churn_financial.html"
@@ -15,14 +14,22 @@ JSON_PATH = ROOT / "scripts" / "generated_cost_data.json"
 
 MAX_PLOT_POINTS = 250
 
-#FIXME: dynamical values instead of constants
-REVENUE = {
-    "total_monthly_revenue": 455661.0,
-    "monthly_rev_at_risk": 139130.85,
-    "annual_rev_at_risk": 1669570.2,
-    "avg_revenue_per_account": 64.8,
-    "churned_percentage": 26.6,
-}
+
+def build_revenue(df):
+    """KPI block computed from the cleaned dataframe.
+
+    Rounding matches the values the notebook-derived dashboard published, so
+    regenerating produces an identical block.
+    """
+    total = df["MonthlyCharges"].sum()
+    at_risk = df.loc[df["Churn"], "MonthlyCharges"].sum()
+    return {
+        "total_monthly_revenue": round(total, 2),
+        "monthly_rev_at_risk": round(at_risk, 2),
+        "annual_rev_at_risk": round(at_risk * 12, 2),
+        "avg_revenue_per_account": round(df["MonthlyCharges"].mean(), 1),
+        "churned_percentage": round(df["Churn"].mean() * 100, 1),
+    }
 
 
 def build_block(y_true, y_score, rates=None, max_points=MAX_PLOT_POINTS):
@@ -32,23 +39,8 @@ def build_block(y_true, y_score, rates=None, max_points=MAX_PLOT_POINTS):
     sorted ascending, each rate's costs aligned to the same array, plus the
     best 45%-retention threshold and its cost.
     """
-    
-    #FIXME: same logic in churn.cost . Reuse
     rates = rates or RETENTION_RATES
-    precision, recall, thresholds = precision_recall_curve(y_true, y_score)
-    thresholds = np.concatenate(([0.0], thresholds))  # align full-predict point
-    P = int(y_true.sum())
-    TP = recall * P
-    FN = P - TP
-    FP = TP * (1.0 / precision - 1.0)
-
-    curves = {}
-    for p in rates:
-        curves[rate_key(p)] = costs_from_curve(precision, recall, P, p)
-
-    order = np.argsort(thresholds)
-    thresholds = thresholds[order]
-    curves = {k: np.asarray(v)[order] for k, v in curves.items()}
+    thresholds, curves = aligned_cost_curves(y_true, y_score, rates)
 
     c45 = curves[rate_key(0.45)]
     best_idx = int(np.argmin(c45))
@@ -58,7 +50,7 @@ def build_block(y_true, y_score, rates=None, max_points=MAX_PLOT_POINTS):
     plot_th, plot_curves = _downsample(thresholds, curves, best_idx, max_points)
     return {
         "thresholds": [round(float(t), 6) for t in plot_th],
-        "no_model_cost": round(P * FN_COST, 2),
+        "no_model_cost": round(int(y_true.sum()) * FN_COST, 2), # P * FN_cost
         "cost_curves": {
             k: [round(float(v), 2) for v in vals] for k, vals in plot_curves.items()
         },
@@ -75,14 +67,14 @@ def _downsample(thresholds, curves, best_idx, max_points):
     return thresholds[idx], {k: v[idx] for k, v in curves.items()}
 
 
-def build_cost_data(rf_block, lgb_block, rates=None):
+def build_cost_data(rf_block, lgb_block, revenue, rates=None):
     return {
         "rf": rf_block,
         "lgb": lgb_block,
         "retention_rates": rates or RETENTION_RATES,
         "FN_cost": FN_COST,
         "FP_cost": FP_COST,
-        "revenue": REVENUE,
+        "revenue": revenue,
     }
 
 
