@@ -34,15 +34,3 @@ def make_pipeline(X, model="rf", preprocessor=build_preprocessor, **model_kwargs
     return Pipeline(
         [("preprocessor", preprocessor(X)), (MODEL_STEP, estimator)]
     )
-
-
-def rf_baseline(X, preprocessor: Callable = build_preprocessor) -> Pipeline:
-    """RandomForest baseline (notebooks/Baseline.ipynb cell 10)."""
-    return make_pipeline(X, preprocessor=preprocessor, model="rf")
-
-
-def lgb_scale_pos_weight(X, scale_pos_weight, preprocessor: Callable = build_preprocessor)-> Pipeline:
-    """LightGBM with class-imbalance weighting (Baseline.ipynb cells 20/39)."""
-    return make_pipeline(
-        X, preprocessor=preprocessor, model="lgb", scale_pos_weight=scale_pos_weight
-    )
