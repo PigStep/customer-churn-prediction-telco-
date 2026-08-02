@@ -33,7 +33,7 @@ telco_churn_financial.html  # committed build artifact; never hand-edit COST_DAT
 - `generate_chart_data.py` is the only runner. It computes RF (5-fold CV) and LightGBM (Optuna nested-CV) OOF probabilities, builds `COST_DATA` via `report.py`, writes `generated_cost_data.json`, and **patches the `COST_DATA` block inside the HTML** with a regex. Run it from the repo root so `import churn` resolves.
 - The script has inline verification pins (cost mins, savings range, best-threshold drift window) that mirror `notebooks/Model.ipynb` headline numbers. It **exits nonzero** (`SystemExit`) on drift — that's the de-facto test suite.
 - It's expensive: 5 outer folds × 50 Optuna trials + RF CV (minutes). Don't run it casually to "test" a change.
-- `report.py` REVENUE dict is hardcoded with a `#FIXME: dynamical values instead of constants` — business numbers are duplicated there and in the HTML.
+- `report.py` computes the REVENUE KPI block from the cleaned dataframe (`build_revenue(df)`); the same KPIs are still hardcoded inside the `REV_DATA` block in the HTML.
 
 ## Conventions
 
