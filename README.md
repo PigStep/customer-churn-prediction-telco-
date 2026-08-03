@@ -31,7 +31,9 @@ customer-churn-prediction-telco-/
 │   └── Churn distribution.png
 ├── .streamlit/
 │   └── config.toml        # Streamlit custom theme config
-├── telco_churn_dashboard.html  # Interactive HTML dashboard
+├── dashboards/
+│   ├── telco_churn_dashboard.html   # Interactive executive HTML dashboard
+│   └── telco_churn_financial.html   # Financial impact &amp; P&amp;L HTML dashboard
 ├── AGENTS.md              # Agent instructions for AI coding assistants
 ├── pyproject.toml         # Python project config (uv, hatchling, streamlit)
 ├── README.md
@@ -242,7 +244,7 @@ Based on retention company success probability:
 
 ## Interactive Dashboard
 
-An interactive HTML dashboard (`telco_churn_dashboard.html`) is included for exploring model results, comparing approaches, and visualizing cost trade-offs without running any code. Open it in any browser. Look at deployed dashboard here: https://churn-telco-dashboard.vladsmertev24.workers.dev/
+An interactive HTML dashboard (`dashboards/telco_churn_dashboard.html`) is included for exploring model results, comparing approaches, and visualizing cost trade-offs without running any code. Open it in any browser. Look at deployed dashboard here: https://churn-telco-dashboard.vladsmertev24.workers.dev/
 
 ---
 

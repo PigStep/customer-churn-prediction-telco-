@@ -9,7 +9,7 @@ uv run python scripts/generate_chart_data.py   # regenerate dashboard data (slow
 
 - Python >=3.14, package manager is **uv** (not pip/poetry). `churn` is installed editable via the hatchling build in `pyproject.toml` (`packages = ["src/churn"]`).
 - There is **no Streamlit app** anymore — the dashboard was deleted (commit `28ca01b`). `.streamlit/config.toml` and the `streamlit` dependency are stale leftovers; don't add Streamlit code back without asking.
-- The deliverables are self-contained HTML dashboards (`telco_churn_financial.html`) that render from an embedded `const COST_DATA = {...};` block.
+- The deliverables are self-contained HTML dashboards (`dashboards/telco_churn_financial.html`) that render from an embedded `const COST_DATA = {...};` block.
 
 ## Project structure
 
@@ -25,7 +25,8 @@ src/churn/
   report.py    # build_cost_data + write_json + patch_html (regex-patches COST_DATA)
 notebooks/     # EDA / Baseline / Model — the SOURCE OF TRUTH the scripts port
 data/dataset.csv   # raw Telco CSV (7,032 rows after cleaning)
-telco_churn_financial.html  # committed build artifact; never hand-edit COST_DATA here
+dashboards/        # self-contained HTML deliverables (executive + financial)
+  telco_churn_financial.html  # committed build artifact; never hand-edit COST_DATA here
 ```
 
 ## Pipeline wiring
