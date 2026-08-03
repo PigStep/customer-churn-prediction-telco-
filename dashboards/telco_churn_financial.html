@@ -195,17 +195,6 @@ body {
     </div>
   </section>
 
-  <section class="chart-row">
-    <div class="chart-container">
-      <h3>Churned Monthly Revenue by Internet Service</h3>
-      <canvas id="chart-rev-internet"></canvas>
-    </div>
-    <div class="chart-container">
-      <h3>Churned Revenue by Payment Method</h3>
-      <canvas id="chart-rev-payment"></canvas>
-    </div>
-  </section>
-
   <div class="info-bar">
     <strong>A/B Testing Required</strong> — The 45% retention rate is sourced from <em>Harvard Business Review</em> (p.22, "Marketing winning back lost customers") for a 6-month / 20% discount win-back strategy. <strong>This assumption must be validated in production via A/B testing.</strong> The model's cost savings are highly sensitive to the actual retention rate (see chart above): at 45% retention the model is profitable at almost every threshold, but at 15% retention only ~53% of RF thresholds (30% for LightGBM) beat the no-model baseline, and savings are marginal.<br>
     <div class="cite">&mdash; Source: <a href="https://static.fecredit.com.vn/Document/Th%C6%B0%20Vi%E1%BB%87n%20S%C3%A1ch/Merged/Mar%2016/Part%201.pdf" target="_blank">HBR, "Marketing winning back lost customers"</a>, page 22.</div>
@@ -4350,7 +4339,7 @@ function fmt(v, t) {
 }
 
 // Pre-computed revenue aggregates (from full dataset of 7032 customers)
-const REV_DATA = {"contract":{"labels":["Month-to-month","One year","Two year"],"active":[136447.05,81678.45,98404.65],"churned":[120847.1,14118.45,4165.3]},"tenure":{"labels":["0-5","6-11","12-17","18-23","24-29","30-35","36-41","42-47","48-53","54-59","60-65","66-71"],"values":[46852.7,19169.6,14762.6,9380.9,8446.1,7716.15,6685.15,5733.1,5581.45,5208.75,3392.15,6202.2]},"internet":{"labels":["DSL","Fiber optic","No"],"values":[22529.2,114300.05,2301.6]},"payment":{"labels":["Mailed check","Electronic check","Bank transfer (automatic)","Credit card (automatic)"],"values":[16803.6,84288.75,20091.9,17946.6]},"kpis":{"total_monthly_revenue":455661,"monthly_rev_at_risk":139130.85,"annual_rev_at_risk":1669570.2,"avg_revenue_per_account":64.8,"churned_percentage":26.6}};
+const REV_DATA = {"contract":{"labels":["Month-to-month","One year","Two year"],"active":[136447.05,81678.45,98404.65],"churned":[120847.1,14118.45,4165.3]},"tenure":{"labels":["0-5","6-11","12-17","18-23","24-29","30-35","36-41","42-47","48-53","54-59","60-65","66-71"],"values":[46852.7,19169.6,14762.6,9380.9,8446.1,7716.15,6685.15,5733.1,5581.45,5208.75,3392.15,6202.2]},"kpis":{"total_monthly_revenue":455661,"monthly_rev_at_risk":139130.85,"annual_rev_at_risk":1669570.2,"avg_revenue_per_account":64.8,"churned_percentage":26.6}};
 
 // ==================== DASHBOARD CLASS ====================
 class Dashboard {
@@ -4578,8 +4567,6 @@ class Dashboard {
   renderRevenueCharts() {
     this.renderRevContract();
     this.renderRevTenure();
-    this.renderRevInternet();
-    this.renderRevPayment();
   }
 
   renderRevContract() {
@@ -4642,78 +4629,6 @@ class Dashboard {
         scales: {
           x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } },
           y: { beginAtZero: true, ticks: { callback: v => fmt(v, 'currency'), font: { size: 10 } } }
-        }
-      }
-    });
-  }
-
-  renderRevInternet() {
-    const d = this.revData.internet;
-    const labels = d.labels;
-    const values = d.values;
-
-    const ctx = document.getElementById('chart-rev-internet').getContext('2d');
-    if (this.charts.revInternet) this.charts.revInternet.destroy();
-    this.charts.revInternet = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels,
-        datasets: [{
-          data: values,
-          backgroundColor: CHART_COLORS.map(c => c + 'CC'),
-          borderColor: '#ffffff',
-          borderWidth: 2,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        cutout: '55%',
-        plugins: {
-          legend: { position: 'right', labels: { usePointStyle: true, padding: 12, font: { size: 10 } } },
-          tooltip: {
-            callbacks: {
-              label: ctx => {
-                const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
-                const pct = ((ctx.parsed / total) * 100).toFixed(1);
-                return ctx.label + ': ' + fmt(ctx.parsed, 'currency') + ' / mo (' + pct + '%)';
-              }
-            }
-          }
-        }
-      }
-    });
-  }
-
-  renderRevPayment() {
-    const d = this.revData.payment;
-    const labels = d.labels;
-    const values = d.values;
-
-    const ctx = document.getElementById('chart-rev-payment').getContext('2d');
-    if (this.charts.revPayment) this.charts.revPayment.destroy();
-    this.charts.revPayment = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [{
-          label: 'Churned Revenue ($/mo)',
-          data: values,
-          backgroundColor: CHART_COLORS.map(c => c + 'CC'),
-          borderColor: CHART_COLORS,
-          borderWidth: 1,
-          borderRadius: 3,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        indexAxis: 'y',
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.x, 'currency') + ' / mo' } }
-        },
-        scales: {
-          x: { beginAtZero: true, ticks: { callback: v => fmt(v, 'currency'), font: { size: 10 } } },
-          y: { grid: { display: false }, ticks: { font: { size: 9 } } }
         }
       }
     });
