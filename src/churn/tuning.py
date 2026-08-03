@@ -5,10 +5,8 @@ from functools import partial
 import numpy as np
 import optuna
 from sklearn.base import clone
-from sklearn.metrics import precision_recall_curve
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
-from churn.cost import FN_COST, RETENTION_RATE_HBR, costs_from_curve
 from churn.models import MODEL_STEP
 
 LGB_PARAM_SPACE = {
@@ -45,25 +43,20 @@ def lgb_objective(trial, metric_func, pipeline, X_data, y_data, model_step=MODEL
     return metric_func(valid_y, preds)
 
 
-#FIXME: we do not use nested cv for curve. Nested cv metrics were calculated.
-#Just use best params and plot based on them.
-# Leave nested cv training script for future
 def nested_cv_with_optuna(X, y, pipeline, metric_func, n_trials=50,
                           n_outer=5, random_state=42, model_step=MODEL_STEP):
     """Nested CV: outer loop for unbiased OOF predictions, inner Optuna tuning.
 
     Reproduces notebooks/Model.ipynb `nested_cv_with_optuna` but tunes through
-    the sklearn Pipeline. Returns per-fold cost/savings arrays (CI-ready) and
-    the full out-of-fold probabilities.
+    the sklearn Pipeline. Returns the full out-of-fold (OOF) probabilities, which is
+    the only output the chart pipeline consumes (curves are built from them in
+    churn.report.build_block).
     """
     outer_skf = StratifiedKFold(n_splits=n_outer, shuffle=True, random_state=random_state)
 
-    fold_money_saved = []
-    fold_no_model_costs = []
-    fold_best_costs = []
     all_oof_proba = np.zeros(len(y))
 
-    for fold, (outer_train_idx, outer_test_idx) in enumerate(outer_skf.split(X, y)):
+    for outer_train_idx, outer_test_idx in outer_skf.split(X, y):
         X_outer_train, X_outer_test = X.iloc[outer_train_idx], X.iloc[outer_test_idx]
         y_outer_train, y_outer_test = y.iloc[outer_train_idx], y.iloc[outer_test_idx]
 
@@ -86,21 +79,4 @@ def nested_cv_with_optuna(X, y, pipeline, metric_func, n_trials=50,
         y_proba_fold = pipe.predict_proba(X_outer_test)[:, 1]
         all_oof_proba[outer_test_idx] = y_proba_fold
 
-        precision, recall, thresholds = precision_recall_curve(y_outer_test, y_proba_fold)
-        P_fold = y_outer_test.sum()
-        total_costs = costs_from_curve(
-            precision[:-1], recall[:-1], P_fold, RETENTION_RATE_HBR
-        )
-
-        best_idx = np.argmin(total_costs)
-        no_model_cost = P_fold * FN_COST
-        fold_no_model_costs.append(no_model_cost)
-        fold_best_costs.append(total_costs[best_idx])
-        fold_money_saved.append(no_model_cost - total_costs[best_idx])
-
-    return (
-        np.asarray(fold_money_saved),
-        np.asarray(fold_no_model_costs),
-        np.asarray(fold_best_costs),
-        all_oof_proba,
-    )
+    return all_oof_proba
