@@ -9,7 +9,7 @@ import numpy as np
 from churn.cost import FN_COST, FP_COST, RETENTION_RATES, aligned_cost_curves, rate_key
 
 ROOT = Path(__file__).resolve().parents[2]
-HTML_PATH = ROOT / "telco_churn_financial.html"
+HTML_PATH = ROOT / "dashboards" / "telco_churn_financial.html"
 JSON_PATH = ROOT / "scripts" / "generated_cost_data.json"
 
 MAX_PLOT_POINTS = 250
