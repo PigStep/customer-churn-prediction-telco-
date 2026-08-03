@@ -1,4 +1,4 @@
-"""Regenerate COST_DATA for telco_churn_financial.html.
+"""Regenerate COST_DATA for dashboards/telco_churn_financial.html.
 
 Full-dataset basis matching notebooks/Model.ipynb headline numbers:
 
@@ -12,7 +12,7 @@ Full-dataset basis matching notebooks/Model.ipynb headline numbers:
   * no-model cost = 1869 churners * 997.94 = $1,865,150
 
 Writes scripts/generated_cost_data.json and patches the COST_DATA block
-embedded in telco_churn_financial.html. Fails loudly if the results drift
+embedded in dashboards/telco_churn_financial.html. Fails loudly if the results drift
 from the notebook-verified pins.
 """
 
