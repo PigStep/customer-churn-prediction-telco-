@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "churn-prediction"
 version = "0.1.0"
@@ -5,5 +9,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "lightgbm>=4.7.0",
+    "optuna>=4.0.0",
+    "scikit-learn>=1.9.0",
     "streamlit>=1.60.0",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/churn"]
