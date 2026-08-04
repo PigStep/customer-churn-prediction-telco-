@@ -2,7 +2,8 @@
 
 Predicting customer churn for a telecom company using machine learning, with cost-sensitive analysis to optimize retention strategy.
 
-<!-- Add screenshot: Streamlit app demo -->
+![Telco churn executive dashboard](assets/banner_executive.png)
+
 
 ---
 
@@ -66,20 +67,13 @@ Key findings from `notebooks/EDA.ipynb`:
 
 The dataset is imbalanced — roughly 1 in 4 customers churned.
 
-<!-- Add screenshot: Churn distribution bar plot -->
-![churn_distribution](assets/Churn distribution.png)
-
 ### Feature Distributions
 
-<!-- Add screenshot: Discrete feature distributions (17 bar plots) -->
-
-<!-- Add screenshot: Continuous feature histograms (tenure, MonthlyCharges, TotalCharges) -->
+Most discrete features are heavily skewed toward a few categories — month-to-month contracts, fiber optic, and electronic check dominate — which foreshadows the churn drivers below.
 
 ### Correlation Analysis
 
 Binary and numeric features show small-to-medium correlations with the target. Notable multicollinearity exists between `tenure`, `MonthlyCharges`, and `TotalCharges`.
-
-<!-- Add screenshot: Correlation heatmap -->
 
 ### Cramer's V — Nominal Feature Importance
 
@@ -89,8 +83,6 @@ Strongest predictors of churn:
 - **PaymentMethod** (electronic check = higher churn)
 - **OnlineSecurity / TechSupport** (absence = higher churn)
 
-<!-- Add screenshot: Cramer's V point plots -->
-
 > [!NOTE]
 > Streaming services (TV, Movies) showed high initial correlation with churn, but this was largely explained by whether the customer had internet at all — not by the streaming itself.
 
@@ -98,13 +90,11 @@ Strongest predictors of churn:
 
 Factor Analysis of Mixed Data shows churn/non-churn clusters overlap significantly — the two components explain only ~15% of variance.
 
-<!-- Add screenshot: FAMD 2D scatter plot -->
-
 ### Survival Analysis
 
 Kaplan-Meier survival curve reveals that new customers (<10 months tenure) are at highest risk of churning. Long-tenure customers are far more stable.
 
-<!-- Add screenshot: Kaplan-Meier survival curve -->
+![Kaplan-Meier survival curve](assets/kaplan_meier_survival.png)
 
 ---
 
@@ -138,7 +128,7 @@ Several approaches were tested:
 | SMOTE + RF | 0.58 | 0.58 | 0.5913 | Limited by mostly-categorical data |
 | GBDT + Undersampling | 0.77 | 0.50 | 0.6317 | Best recall, but lower AUC than standalone LightGBM |
 
-<!-- Add screenshot: Model comparison bar chart (Precision, Recall, PR-AUC) -->
+![Model comparison](assets/model_comparison.png)
 
 > [!TIP]
 > **Best approaches:**
@@ -206,8 +196,6 @@ SHAP analysis reveals the top-5 churn drivers:
 
 ## Precision-Recall Analysis
 
-<!-- Add screenshot: PR curves for essential models (2x2 grid) -->
-
 Key takeaways from the PR curves:
 - ~70% precision achievable at ~20% recall (confident but conservative)
 - 80–100% recall possible at 25–40% precision (aggressive but noisy)
@@ -224,7 +212,7 @@ Translating model performance into business dollars:
 | **False Negative** (missed churner) | **$997.94** | Lost customer lifetime value |
 | **False Positive** (false alarm) | **$89.33** | Unnecessary retention offer |
 
-<!-- Add screenshot: Total cost vs threshold curve at different retention rates -->
+![Total cost vs threshold curves](assets/cost_curves.png)
 
 ### Threshold Recommendations
 
@@ -244,7 +232,7 @@ Based on retention company success probability:
 
 ## Interactive Dashboard
 
-An interactive HTML dashboard (`dashboards/telco_churn_dashboard.html`) is included for exploring model results, comparing approaches, and visualizing cost trade-offs without running any code. Open it in any browser. Look at deployed dashboard here: https://churn-telco-dashboard.vladsmertev24.workers.dev/
+An interactive HTML dashboard (`dashboards/telco_churn_dashboard.html`) is included for exploring model results, comparing approaches, and visualizing cost trade-offs without running any code. Open it in any browser. Look at demo dashboard here: https://churn-telco-dashboard.vladsmertev24.workers.dev/
 
 ---
 
