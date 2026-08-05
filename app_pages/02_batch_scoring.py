@@ -180,7 +180,7 @@ with val_tab:
             "Tier": tier,
             "Customers": int(m.sum()),
             "Churn rate in tier": val.loc[m, "Churn"].mean(),
-            "% of churners captured": captured / total_churn if total_churn else None,
+            "% of churners tier capture": captured / total_churn if total_churn else None,
         })
     table = pd.DataFrame(val_rows)
 
@@ -202,7 +202,7 @@ with val_tab:
         table.style.apply(
             lambda s: [_churn_color(v) for v in s], subset=["Churn rate in tier"]
         ).apply(
-            lambda s: [_captured_color(v) for v in s], subset=["% of churners captured"]
+            lambda s: [_captured_color(v) for v in s], subset=["% of churners tier capture"]
         )
     )
     st.dataframe(
@@ -218,8 +218,8 @@ with val_tab:
                 help="Of the customers in this tier, the share that actually churned "
                      "(precision) — how strongly the band concentrates churn.",
             ),
-            "% of churners captured": st.column_config.NumberColumn(
-                "% of churners captured",
+            "% of churners tier capture": st.column_config.NumberColumn(
+                "% of churners tier capture",
                 format="percent",
                 help="Of all churners in the holdout, the share that falls in this tier "
                      "(recall) — how much of the churn population this band covers.",
@@ -228,7 +228,7 @@ with val_tab:
     )
     st.caption("**Churn rate in tier** — of this tier's customers, the % that actually "
                "churned (precision): a high rate means the band concentrates churn. "
-               "**% of churners captured** — of all holdout churners, the % that fall "
+               "**% of churners tier capture** — of all holdout churners, the % that fall "
                "in this tier (recall): how much of the churn population the band "
                "covers. Flags rank priority: 🔴 High, 🟡 Medium, 🟢 Low.")
 
