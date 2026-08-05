@@ -14,9 +14,8 @@ st.set_page_config(
 
 pages = st.navigation(
     [
-        st.Page("app_pages/01_model_overview.py", title="Model overview", icon=":material/warehouse:"),
-        # st.Page("app_pages/02_batch_scoring.py", title="Batch scoring", icon=":material/dns:"),
-        # st.Page("app_pages/03_single_customer.py", title="Customer lookup", icon=":material/person_search:"),
+        st.Page("app_pages/02_batch_scoring.py", title="Batch scoring", icon=":material/dns:"),
+        st.Page("app_pages/03_single_customer.py", title="Customer lookup", icon=":material/person_search:"),
     ]
 )
 pages.run()
