@@ -1,4 +1,4 @@
-"""Page 2 — Batch scoring: the nightly scoring run + action queue + validation."""
+"""Page 2 — Churn risk & action queue: the nightly scoring run + action queue + validation."""
 
 import pandas as pd
 import streamlit as st
@@ -23,11 +23,11 @@ TIER_COLORS = {"Low": "#22C55E", "Medium": "#F59E0B", "High": "#EF4444"}
 base = load_current_base()
 card = load_model_card()
 
-st.title("Batch scoring — current customer base")
-st.caption("Simulates the production nightly job: score every current customer with the "
-           "served LightGBM artifact, tier them by churn confidence, and hand the "
-           "retention team a prioritized action queue. Labels are unknown here — that "
-           "is the point of a scoring run.")
+st.title("Churn risk & action queue")
+st.caption("A model-demo implementation of the production nightly job: score every "
+           "current customer with the served LightGBM artifact, tier them by churn "
+           "confidence, and hand the retention team a prioritized action queue. Labels "
+           "are unknown here — that is the point of a scoring run.")
 
 hm = card["holdout_metrics"]
 with st.container(horizontal=True):
