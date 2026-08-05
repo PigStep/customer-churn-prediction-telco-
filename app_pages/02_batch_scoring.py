@@ -170,47 +170,22 @@ with val_tab:
     val = load_validation_df()
     total_churn = int(val["Churn"].sum())
 
-    FLAG_SYMBOLS = {"High": "🔴", "Medium": "🟡", "Low": "🟢"}
     val_rows = []
     for tier in TIER_ORDER:
         m = val["risk_tier"] == tier
         captured = int(val.loc[m, "Churn"].sum())
         val_rows.append({
-            "Flag": FLAG_SYMBOLS[tier],
             "Tier": tier,
             "Customers": int(m.sum()),
             "Churn rate in tier": val.loc[m, "Churn"].mean(),
             "% of churners tier capture": captured / total_churn if total_churn else None,
         })
     table = pd.DataFrame(val_rows)
-
-    def _hex_between(lo: str, hi: str, t: float) -> str:
-        lo_rgb = [int(lo[i:i + 2], 16) for i in (1, 3, 5)]
-        hi_rgb = [int(hi[i:i + 2], 16) for i in (1, 3, 5)]
-        t = max(0.0, min(1.0, t))
-        return "#" + "".join(
-            f"{round(a + (b - a) * t):02x}" for a, b in zip(lo_rgb, hi_rgb)
-        )
-
-    def _churn_color(v: float) -> str:
-        return f"background-color: {_hex_between('#22C55E', '#EF4444', v)}"
-
-    def _captured_color(v: float) -> str:
-        return "" if pd.isna(v) else f"background-color: {_hex_between('#FFFFFF', '#22C55E', v)}"
-
-    styled = (
-        table.style.apply(
-            lambda s: [_churn_color(v) for v in s], subset=["Churn rate in tier"]
-        ).apply(
-            lambda s: [_captured_color(v) for v in s], subset=["% of churners tier capture"]
-        )
-    )
     st.dataframe(
-        styled,
+        table,
         hide_index=True,
         width="stretch",
         column_config={
-            "Flag": st.column_config.TextColumn("Flag", help="Tier priority flag."),
             "Customers": st.column_config.NumberColumn("Customers", format="%d"),
             "Churn rate in tier": st.column_config.NumberColumn(
                 "Churn rate in tier",
@@ -230,7 +205,7 @@ with val_tab:
                "churned (precision): a high rate means the band concentrates churn. "
                "**% of churners tier capture** — of all holdout churners, the % that fall "
                "in this tier (recall): how much of the churn population the band "
-               "covers. Flags rank priority: 🔴 High, 🟡 Medium, 🟢 Low.")
+               "covers.")
 
     th = card["holdout_metrics"]["cost_optimal_threshold_45"]
     predicted = val["churn_proba"] >= th
@@ -256,7 +231,8 @@ with val_tab:
             st.info(
                 f"The cost-optimal cutoff is **{th:.3f}** — below the 0.30 band "
                 f"boundary — so a purely cost-driven policy would intervene more "
-                f"aggressively than the fixed bands. Production teams usually ship "
-                f"both: the bands drive prioritization, the cutoff sets the floor "
-                f"of who is worth a retention action."
+                f"aggressively than the fixed bands.\n\n"
+                f":orange[**Production teams usually ship both: the bands drive "
+                f"prioritization, the cutoff sets the floor of who is worth a "
+                f"retention action.**]"
             )
