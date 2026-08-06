@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 import altair as alt
 
+from churn.cost import FP_COST
 from churn.app_utils import (
     RETENTION_RATE,
     TIER_ORDER,
@@ -29,6 +30,7 @@ st.caption("A model-demo implementation of the production nightly job: score eve
            "confidence, and hand the retention team a prioritized action queue. Labels "
            "are unknown here — that is the point of a scoring run.")
 
+# --- KPI's ---
 hm = card["holdout_metrics"]
 with st.container(horizontal=True):
     st.metric("Model", card["model"], border=True)
@@ -43,6 +45,8 @@ with st.container(horizontal=True):
     st.metric("Current customers", f"{len(base):,}", border=True)
     st.metric("At risk (medium + high)", f"{len(at_risk):,}", border=True)
     st.metric("Monthly revenue at risk", f"${rev_at_risk:,.0f}", border=True)
+    # TODO: think about the formula. Current estimated saves are ~45% (while tests show ~22.6)
+    # At least include retention program cost
     st.metric("Expected monthly saves", f"${expected_saves:,.0f}", border=True)
 
 st.caption(f"{len(at_risk):,} of {len(base):,} current customers "
@@ -58,9 +62,11 @@ run_tab, val_tab = st.tabs(
     ["Scoring run", "Offline validation"], on_change="rerun"
 )
 
+#TODO: separate tabs by different scripts (01_run_tab.py / 01_val_tab.py)
 with run_tab:
     col1, col2 = st.columns(2)
 
+    # --- Charts ---
     with col1:
         with st.container(border=True):
             st.subheader("Risk tier distribution")
@@ -90,6 +96,7 @@ with run_tab:
             st.altair_chart(hist + band_rules, width="stretch")
             st.caption("Dashed lines mark the confidence-band boundaries (0.30 / 0.70).")
 
+    # --- Intervention table ---
     with st.container(border=True):
         st.subheader("Intervention plan by tier")
         rows = []
@@ -105,15 +112,23 @@ with run_tab:
                 "Intervention": pb["intervention"],
                 "Cost / customer": f"${pb['cost_per_customer']:,.2f}",
                 "Campaign cost": f"${n * pb['cost_per_customer']:,.0f}",
-                "Expected saved / mo": f"${expected_monthly_saves(rev):,.0f}",
+                "Expected saved / mo": (
+                    f"${expected_monthly_saves(rev):,.0f}"
+                    if pb["cost_per_customer"] > 0 else "—"
+                ),
             })
         st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-        st.caption("Campaign cost = customers × per-customer intervention cost "
-                   "(illustrative, Kumo.ai-style). Expected saved = monthly revenue at "
-                   f"risk × {RETENTION_RATE:.0%} retention success.")
+        st.caption(f"Intervention = the 6-month / 20% discount offer at "
+                   f"${FP_COST:,.2f} per customer (the notebook FP cost, "
+                   "EDA.ipynb cell 53); low-risk customers receive no action. "
+                   "The cost-optimal threshold (~0.17) sits below the 0.30 band "
+                   "floor, so the offer reaches most of the base. Expected saved "
+                   f"= monthly revenue at risk × {RETENTION_RATE:.0%} retention "
+                   "success (Baseline.ipynb cell 44).")
 
     st.divider()
 
+    # --- Model labeled customers dataset ---
     st.subheader("Action queue — at-risk customers")
     selected_tiers = st.pills(
         "Filter by tier",
@@ -206,7 +221,7 @@ with val_tab:
                "**% of churners tier capture** — of all holdout churners, the % that fall "
                "in this tier (recall): how much of the churn population the band "
                "covers.")
-
+    #TODO: chart real churns and predicted churns. To see the distribution
     th = card["holdout_metrics"]["cost_optimal_threshold_45"]
     predicted = val["churn_proba"] >= th
     actual = val["Churn"]
