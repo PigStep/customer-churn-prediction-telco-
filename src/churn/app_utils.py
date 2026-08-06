@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+from churn.cost import FP_COST
 from churn.data import load_data
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -24,27 +25,24 @@ PIPELINE_PATH = MODELS_DIR / "churn_lgb.joblib"
 CARD_PATH = MODELS_DIR / "model_card.json"
 INDICES_PATH = MODELS_DIR / "current_base_indices.npz"
 
-# Fixed confidence bands (CleverTap / Kumo.ai convention).
 BANDS = [("Low", 0.0, 0.30), ("Medium", 0.30, 0.70), ("High", 0.70, 1.0)]
 TIER_ORDER = ["Low", "Medium", "High"]
 
-# Retention success probability (Harvard Business Review), used for expected
-# revenue-saved estimates.
 RETENTION_RATE = 0.45
 
-# Cost-matched intervention playbook per tier (Kumo.ai-style, illustrative).
+# Intervention playbook per tier
 TIER_PLAYBOOK = {
     "Low": {
-        "intervention": "Automated in-app / email nudge",
-        "cost_per_customer": 2.00,
+        "intervention": "No action (monitor)",
+        "cost_per_customer": 0.00,
     },
     "Medium": {
-        "intervention": "Targeted email + account check-in",
-        "cost_per_customer": 25.00,
+        "intervention": "6-month 20% discount offer",
+        "cost_per_customer": FP_COST,
     },
     "High": {
-        "intervention": "CSM call + retention offer",
-        "cost_per_customer": 150.00,
+        "intervention": "6-month 20% discount offer",
+        "cost_per_customer": FP_COST,
     },
 }
 
@@ -75,12 +73,20 @@ def load_cleaned_df() -> pd.DataFrame:
     return load_data()
 
 
+def risk_tier(proba: float) -> str:
+    if proba < 0.30:
+        return "Low"
+    if proba < 0.70:
+        return "Medium"
+    return "High"
+
+
 @st.cache_data(show_spinner=False)
 def load_current_base() -> pd.DataFrame:
     """Simulated 'current customers' snapshot: scored, with hidden labels.
 
     Columns: customer_id + all model features + churn_proba + risk_tier.
-    `Churn` (the ground truth) is intentionally not included here — the
+    `Churn` (the ground truth) is intentionally not included here - the
     scoring pipeline never sees labels, mirroring production.
     """
     df = load_cleaned_df()
@@ -107,14 +113,6 @@ def load_validation_df() -> pd.DataFrame:
     return base
 
 
-def risk_tier(proba: float) -> str:
-    if proba < 0.30:
-        return "Low"
-    if proba < 0.70:
-        return "Medium"
-    return "High"
-
-
 def tier_label(proba: float) -> str:
     """'Low (<30%)'-style label used in tables and captions."""
     tier = risk_tier(proba)
@@ -131,4 +129,5 @@ def playbook_for(tier: str) -> dict:
 
 def expected_monthly_saves(at_risk_rev: float) -> float:
     """Expected recovered revenue given the retention success rate."""
+    #TODO: eshure formula works
     return at_risk_rev * RETENTION_RATE
