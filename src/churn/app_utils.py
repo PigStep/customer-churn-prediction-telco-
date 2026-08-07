@@ -30,6 +30,11 @@ TIER_ORDER = ["Low", "Medium", "High"]
 
 RETENTION_RATE = 0.45
 
+# Length of the priced retention offer (6-month / 20% discount), used to
+# amortize the one-time offer cost (FP_COST per customer) into a monthly
+# program-cost figure for the expected-saves KPI.
+OFFER_MONTHS = 6
+
 # Intervention playbook per tier
 TIER_PLAYBOOK = {
     "Low": {
@@ -127,7 +132,15 @@ def playbook_for(tier: str) -> dict:
     return TIER_PLAYBOOK[tier]
 
 
-def expected_monthly_saves(at_risk_rev: float) -> float:
-    """Expected recovered revenue given the retention success rate."""
-    #TODO: eshure formula works
-    return at_risk_rev * RETENTION_RATE
+def expected_monthly_saves(at_risk_rev: float, n_at_risk: int) -> float:
+    """Expected net monthly revenue recovered by the retention program.
+
+    Gross recovered revenue is the at-risk revenue times the retention success
+    rate; the retention program cost is the one-time offer (FP_COST per
+    intervened customer) amortized over the offer's length (OFFER_MONTHS).
+    Mirrors the notebook cost model (Model.ipynb cell 18), which nets the offer
+    cost out of the savings.
+    """
+    gross = at_risk_rev * RETENTION_RATE
+    program_cost = n_at_risk * FP_COST / OFFER_MONTHS
+    return gross - program_cost
