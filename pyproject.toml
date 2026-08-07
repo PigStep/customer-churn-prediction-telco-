@@ -17,3 +17,8 @@ dependencies = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/churn"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.1",
+]
