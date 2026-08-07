@@ -3,11 +3,10 @@
 Kept in its own script so the batch-scoring page stays a thin tab shell
 (see app_pages/01_batch_scoring.py). Rendered via render().
 """
+import altair as alt
 import pandas as pd
 import streamlit as st
-import altair as alt
 
-from churn.cost import FP_COST
 from churn.app_utils import (
     RETENTION_RATE,
     TIER_ORDER,
@@ -16,6 +15,7 @@ from churn.app_utils import (
     load_current_base,
     playbook_for,
 )
+from churn.cost import FP_COST
 
 TIER_COLORS = {"Low": "#22C55E", "Medium": "#F59E0B", "High": "#EF4444"}
 
@@ -26,34 +26,32 @@ def render():
     col1, col2 = st.columns(2)
 
     # --- Charts ---
-    with col1:
-        with st.container(border=True):
-            st.subheader("Risk tier distribution")
-            counts = base["risk_tier"].value_counts().reindex(TIER_ORDER).reset_index()
-            counts.columns = ["risk_tier", "count"]
-            bar = alt.Chart(counts).mark_bar().encode(
-                x=alt.X("risk_tier:N", title=None, sort=TIER_ORDER),
-                y=alt.Y("count:Q", title="Customers"),
-                color=alt.Color("risk_tier:N", scale=alt.Scale(
-                    domain=TIER_ORDER, range=[TIER_COLORS[t] for t in TIER_ORDER]),
-                    legend=None),
-            )
-            st.altair_chart(bar, width="stretch")
-            st.caption("High-risk customers are a small slice of the base but carry the "
-                       "highest churn probability — prioritize them first.")
+    with col1, st.container(border=True):
+        st.subheader("Risk tier distribution")
+        counts = base["risk_tier"].value_counts().reindex(TIER_ORDER).reset_index()
+        counts.columns = ["risk_tier", "count"]
+        bar = alt.Chart(counts).mark_bar().encode(
+            x=alt.X("risk_tier:N", title=None, sort=TIER_ORDER),
+            y=alt.Y("count:Q", title="Customers"),
+            color=alt.Color("risk_tier:N", scale=alt.Scale(
+                domain=TIER_ORDER, range=[TIER_COLORS[t] for t in TIER_ORDER]),
+                legend=None),
+        )
+        st.altair_chart(bar, width="stretch")
+        st.caption("High-risk customers are a small slice of the base but carry the "
+                   "highest churn probability — prioritize them first.")
 
-    with col2:
-        with st.container(border=True):
-            st.subheader("Churn probability distribution")
-            hist = alt.Chart(base).mark_bar().encode(
-                x=alt.X("churn_proba:Q", bin=alt.Bin(step=0.05), title="Churn probability"),
-                y=alt.Y("count():Q", title="Customers"),
-            )
-            band_rules = alt.Chart(pd.DataFrame({"cut": [0.30, 0.70]})).mark_rule(
-                color="#64748B", strokeDash=[4, 4]
-            ).encode(x="cut:Q")
-            st.altair_chart(hist + band_rules, width="stretch")
-            st.caption("Dashed lines mark the confidence-band boundaries (0.30 / 0.70).")
+    with col2, st.container(border=True):
+        st.subheader("Churn probability distribution")
+        hist = alt.Chart(base).mark_bar().encode(
+            x=alt.X("churn_proba:Q", bin=alt.Bin(step=0.05), title="Churn probability"),
+            y=alt.Y("count():Q", title="Customers"),
+        )
+        band_rules = alt.Chart(pd.DataFrame({"cut": [0.30, 0.70]})).mark_rule(
+            color="#64748B", strokeDash=[4, 4]
+        ).encode(x="cut:Q")
+        st.altair_chart(hist + band_rules, width="stretch")
+        st.caption("Dashed lines mark the confidence-band boundaries (0.30 / 0.70).")
 
     # --- Intervention table ---
     with st.container(border=True):

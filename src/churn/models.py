@@ -4,10 +4,10 @@ The estimator step is always named "model" so hyperparameter tuning can target
 it via set_params(model__<param>=...), regardless of the model type.
 """
 
+
 import lightgbm as lgb
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
-from typing import Callable
 
 from churn.data import build_preprocessor
 

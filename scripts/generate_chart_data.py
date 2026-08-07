@@ -26,7 +26,13 @@ from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from churn.cost import no_model_cost, rate_key
 from churn.data import load_data, make_features
 from churn.models import make_pipeline
-from churn.report import build_cost_data, build_block, build_revenue, patch_html, write_json
+from churn.report import (
+    build_block,
+    build_cost_data,
+    build_revenue,
+    patch_html,
+    write_json,
+)
 from churn.tuning import nested_cv_with_optuna
 
 ROOT = Path(__file__).resolve().parents[1]
