@@ -236,6 +236,29 @@ An interactive HTML dashboard (`dashboards/telco_churn_dashboard.html`) is inclu
 
 ---
 
+## Production Demo App (Streamlit)
+
+A Streamlit app (`streamlit_app.py`) reproduces how a churn model actually runs in production, on top of the tuned LightGBM:
+
+```bash
+uv run python scripts/train_model.py   # train + persist the model artifact (models/)
+uv run streamlit run streamlit_app.py  # launch the demo app
+```
+
+**The production story it tells:**
+
+1. **Train/serve separation** — LightGBM is fit once on a 70% historical split (using the PR-AUC-tuned params from `Model.ipynb`) and serialized to `models/churn_lgb.joblib` as a self-contained pipeline (preprocessor + model). The app never re-fits.
+2. **Batch scoring** — the 30% holdout stands in for *today's* customer base. The scoring run assigns each customer a churn probability; labels are hidden from the scoring view, exactly as in production.
+3. **Risk tiering by confidence** — customers are grouped into fixed confidence bands (`Low <30%`, `Medium 30–70%`, `High >70%`). The intervention is the notebook's 6-month / 20% discount offer (FP $89.33 per customer); low-risk customers get no action, and because the cost-optimal threshold (~0.17) sits below the 0.30 band floor, the offer reaches most of the base.
+4. **Action queue** — a prioritized, filterable list of at-risk customers with a CSV export for the retention team, plus revenue-at-risk and expected-saves KPIs.
+5. **Offline validation** — a tab that joins the hidden labels back to show per-tier precision/recall and the confusion matrix at the cost-optimal threshold — the eval pass that ships a threshold to production.
+6. **Customer lookup** — score an existing account or a hypothetical profile, then read off the churn probability, tier, and recommended action.
+
+> [!NOTE]
+> The risk-tier bands are a business grouping choice. With the repo's cost structure (FN $997.94 vs FP $89.33), the savings-maximizing cutoff is ~0.18 at 45% retention — *below* the 0.30 band boundary — which is why the app shows both the bands and the cost-optimal threshold.
+
+---
+
 ## Limitations
 
 - **Historical snapshot**: The analysis relies on a single historical dataset; model performance should be validated on current data before deployment

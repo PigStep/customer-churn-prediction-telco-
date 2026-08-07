@@ -1,0 +1,99 @@
+{
+  "model": "LightGBM (GBDT)",
+  "version": "1.0.0",
+  "trained_at": "2026-08-04T12:23:42+00:00",
+  "split": {
+    "train_rows": 4922,
+    "current_base_rows": 2110,
+    "test_size": 0.3,
+    "random_state": 42,
+    "stratify": "Churn"
+  },
+  "features": [
+    "gender",
+    "SeniorCitizen",
+    "Partner",
+    "Dependents",
+    "tenure",
+    "PhoneService",
+    "MultipleLines",
+    "InternetService",
+    "OnlineSecurity",
+    "OnlineBackup",
+    "DeviceProtection",
+    "TechSupport",
+    "StreamingTV",
+    "StreamingMovies",
+    "Contract",
+    "PaperlessBilling",
+    "PaymentMethod",
+    "MonthlyCharges",
+    "TotalCharges"
+  ],
+  "lgb_params": {
+    "lambda_l1": 2.7580658438306074,
+    "lambda_l2": 0.0011195303464912826,
+    "num_leaves": 5,
+    "feature_fraction": 0.7556401556833737,
+    "bagging_fraction": 0.6111406490538761,
+    "bagging_freq": 3,
+    "min_child_samples": 20
+  },
+  "bands": [
+    {
+      "name": "Low",
+      "low": 0.0,
+      "high": 0.3
+    },
+    {
+      "name": "Medium",
+      "low": 0.3,
+      "high": 0.7
+    },
+    {
+      "name": "High",
+      "low": 0.7,
+      "high": 1.0
+    }
+  ],
+  "holdout_metrics": {
+    "pr_auc": 0.647,
+    "churn_rate": 0.2659,
+    "cost_optimal_threshold_45": 0.1756,
+    "min_model_cost": 432426.51,
+    "no_model_cost": 559844.34
+  },
+  "cost_model": {
+    "FN_cost": 997.94,
+    "FP_cost": 89.33,
+    "retention_rate_hbr": 0.45
+  },
+  "current_base_kpis": {
+    "customers": 2110,
+    "monthly_revenue": 136497.8,
+    "avg_monthly_charges": 64.69
+  },
+  "band_metrics": {
+    "Low": {
+      "count": 1320,
+      "precision": 0.1045,
+      "recall": 0.246,
+      "captured_churners": 138,
+      "monthly_rev_at_risk": 75410.6
+    },
+    "Medium": {
+      "count": 597,
+      "precision": 0.4724,
+      "recall": 0.5027,
+      "captured_churners": 282,
+      "monthly_rev_at_risk": 45610.55
+    },
+    "High": {
+      "count": 193,
+      "precision": 0.7306,
+      "recall": 0.2513,
+      "captured_churners": 141,
+      "monthly_rev_at_risk": 15476.65
+    }
+  }
+}
