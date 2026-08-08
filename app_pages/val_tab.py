@@ -5,9 +5,9 @@ Kept in its own script so the batch-scoring page stays a thin tab shell
 (see app_pages/01_batch_scoring.py). Rendered via render().
 """
 
+import altair as alt
 import pandas as pd
 import streamlit as st
-import altair as alt
 
 from churn.app_utils import (
     TIER_ORDER,
@@ -100,23 +100,21 @@ def render():
     tn = int((~predicted & ~actual).sum())
 
     col_a, col_b = st.columns(2)
-    with col_a:
-        with st.container(border=True):
-            st.markdown("**Confusion matrix at the cost-optimal threshold**")
-            st.markdown(
-                f"- True positives (retained churners): **{tp}**\n"
-                f"- False positives (false alarms): **{fp}**\n"
-                f"- False negatives (missed churners): **{fn}**\n"
-                f"- True negatives: **{tn}**"
-            )
-    with col_b:
-        with st.container(border=True):
-            st.markdown("**Why bands + cutoff coexist**")
-            st.info(
-                f"The cost-optimal cutoff is **{th:.3f}** — below the 0.30 band "
-                f"boundary — so a purely cost-driven policy would intervene more "
-                f"aggressively than the fixed bands.\n\n"
-                f":orange[**Production teams usually ship both: the bands drive "
-                f"prioritization, the cutoff sets the floor of who is worth a "
-                f"retention action.**]"
-            )
+    with col_a, st.container(border=True):
+        st.markdown("**Confusion matrix at the cost-optimal threshold**")
+        st.markdown(
+            f"- True positives (retained churners): **{tp}**\n"
+            f"- False positives (false alarms): **{fp}**\n"
+            f"- False negatives (missed churners): **{fn}**\n"
+            f"- True negatives: **{tn}**"
+        )
+    with col_b, st.container(border=True):
+        st.markdown("**Why bands + cutoff coexist**")
+        st.info(
+            f"The cost-optimal cutoff is **{th:.3f}** — below the 0.30 band "
+            f"boundary — so a purely cost-driven policy would intervene more "
+            f"aggressively than the fixed bands.\n\n"
+            f":orange[**Production teams usually ship both: the bands drive "
+            f"prioritization, the cutoff sets the floor of who is worth a "
+            f"retention action.**]"
+        )

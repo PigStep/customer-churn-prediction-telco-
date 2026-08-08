@@ -19,7 +19,7 @@ The app never re-fits; it loads these artifacts (train/serve separation).
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import joblib
@@ -99,10 +99,10 @@ def build_model_card(pipeline, X_cur, y_cur, y_score)-> dict:
     return {
         "model": "LightGBM (GBDT)",
         "version": "1.0.0",
-        "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "trained_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "split": {
             "train_rows": int(len(X_cur) * (1 - TEST_SIZE) / TEST_SIZE),  # corrected below
-            "current_base_rows": int(len(X_cur)),
+            "current_base_rows": len(X_cur),
             "test_size": TEST_SIZE,
             "random_state": RANDOM_STATE,
             "stratify": "Churn",
@@ -123,7 +123,7 @@ def build_model_card(pipeline, X_cur, y_cur, y_score)-> dict:
             "retention_rate_hbr": RETENTION_RATE_HBR,
         },
         "current_base_kpis": {
-            "customers": int(len(X_cur)),
+            "customers": len(X_cur),
             "monthly_revenue": round(monthly_rev, 2),
             "avg_monthly_charges": round(float(X_cur["MonthlyCharges"].mean()), 2),
         },
@@ -148,7 +148,7 @@ def main():
     print(f"[eval] holdout PR-AUC = {pr_auc:.4f}")
 
     card = build_model_card(pipeline, X_cur, y_cur, y_score)
-    card["split"]["train_rows"] = int(len(X_train))
+    card["split"]["train_rows"] = len(X_train)
 
     cur_indices = np.asarray(X_cur.index).astype(int)
 

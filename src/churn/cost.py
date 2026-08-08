@@ -23,7 +23,7 @@ TP_COST_P0 = FP_COST  # TP cost at p=0
 
 def rate_key(p)->str:
     """JS-safe curve key: String(0.15) -> "0.15", String(1.0) -> "1"."""
-    return "{:g}".format(p)
+    return f"{p:g}"
 
 
 def costs_from_curve(precision, recall, P, rate)->list:

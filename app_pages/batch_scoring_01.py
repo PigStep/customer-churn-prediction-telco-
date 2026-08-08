@@ -5,7 +5,8 @@ separate scripts (run_tab.py / val_tab.py) so each tab stays self-contained.
 
 import streamlit as st
 
-from churn.cost import FP_COST
+from app_pages.run_tab import render as render_run_tab
+from app_pages.val_tab import render as render_val_tab
 from churn.app_utils import (
     RETENTION_RATE,
     ensure_artifacts,
@@ -13,8 +14,7 @@ from churn.app_utils import (
     load_current_base,
     load_model_card,
 )
-from app_pages.run_tab import render as render_run_tab
-from app_pages.val_tab import render as render_val_tab
+from churn.cost import FP_COST
 
 ensure_artifacts()
 

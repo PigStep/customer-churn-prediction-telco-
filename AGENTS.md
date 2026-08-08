@@ -7,6 +7,8 @@ uv sync                               # install deps + editable churn package
 uv run python scripts/generate_chart_data.py   # regenerate dashboard data (slow, see below)
 uv run python scripts/train_model.py           # train + persist the demo-app model artifact (models/)
 uv run streamlit run streamlit_app.py          # run the production-system demo app (Streamlit)
+uv run ruff check .                   # lint (see Verification)
+docker build -t churn-app .           # containerized deploy of the Streamlit app
 ```
 
 - Python >=3.14, package manager is **uv** (not pip/poetry). `churn` is installed editable via the hatchling build in `pyproject.toml` (`packages = ["src/churn"]`).
@@ -24,10 +26,10 @@ scripts/train_model.py           # demo-app training job: 70/30 stratified split
 models/                          # demo-app artifacts (committed, regenerable via train_model.py)
 streamlit_app.py                 # Streamlit entry point (st.navigation over app_pages/)
 app_pages/
-  01_batch_scoring.py    # nightly scoring run: thin tab shell (header KPIs) that renders the two tabs below
+  batch_scoring_01.py    # nightly scoring run: thin tab shell (header KPIs) that renders the two tabs below
   run_tab.py             # scoring-run tab: tier/probability charts, intervention plan, action queue, CSV export
   val_tab.py             # offline-validation tab: holdout tier quality, predicted-vs-actual distribution, confusion matrix
-  02_single_customer.py  # CRM lookup: existing customer or hypothetical profile
+  single_customer_02.py  # CRM lookup: existing customer or hypothetical profile
 src/churn/
   data.py      # load_data() cleaning + build_preprocessor() ColumnTransformer
   models.py    # make_pipeline(X, "rf"|"lgb", **kwargs); estimator step ALWAYS named "model"
@@ -68,7 +70,13 @@ dashboards/        # self-contained HTML deliverables (executive + financial)
 - Run inside `.venv` (kernel: `.venv/bin/python`).
 - Download the Kaggle dataset via `kagglehub` — requires a Kaggle account + API credentials (`~/.kaggle/kaggle.json`).
 
+## Deploy
+
+- `Dockerfile` containerizes the Streamlit app with uv (`uv sync --frozen --no-install-project`); it installs `libgomp1` because LightGBM needs the OpenMP runtime. `.dockerignore` drops `scripts/`, `notebooks/`, `dashboards/`, `assets/` — but `models/` is copied, so the pre-trained artifact ships and the app runs without re-training.
+- `.devcontainer/devcontainer.json` is a stale generic scaffold (Python 3.11, pip, no `requirements.txt`) that contradicts the project (uv, `requires-python = ">=3.14"`). Don't trust it — use uv on 3.14.
+
 ## Verification
 
-- No test suite, no CI, no lint/typecheck configured. Sanity-check changes with `uv run python scripts/generate_chart_data.py` (slow), `uv run python scripts/train_model.py` (fast) or a targeted import: `uv run python -c "import churn.data, churn.cost"`.
-- For the Streamlit app, run the headless smoke test: `uv run streamlit run streamlit_app.py` and click through the three pages (or drive pages with `streamlit.testing.v1.AppTest`).
+- No test suite, no CI. The de-facto tests are the inline drift pins in `generate_chart_data.py` (exit nonzero on drift) and the targeted import: `uv run python -c "import churn.data, churn.cost"`.
+- Lint is **ruff 0.16.1** (dev group): `uv run ruff check .` passes clean. Caveat: `ruff format . --check` reports ~15 files unformatted — the committed code is not format-clean, so don't bulk-run `ruff format` (it would create a huge unrelated diff); format only the lines you touch.
+- For the Streamlit app, run the headless smoke test: `uv run streamlit run streamlit_app.py` and click through the two pages (batch scoring + customer lookup; the batch page has two tabs), or drive pages with `streamlit.testing.v1.AppTest`.

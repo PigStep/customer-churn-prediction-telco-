@@ -10,13 +10,13 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 from churn.models import MODEL_STEP
 
 LGB_PARAM_SPACE = {
-    "lambda_l1": ("suggest_float", dict(low=1e-8, high=10.0, log=True)),
-    "lambda_l2": ("suggest_float", dict(low=1e-8, high=10.0, log=True)),
-    "num_leaves": ("suggest_int", dict(low=2, high=256)),
-    "feature_fraction": ("suggest_float", dict(low=0.4, high=1.0)),
-    "bagging_fraction": ("suggest_float", dict(low=0.4, high=1.0)),
-    "bagging_freq": ("suggest_int", dict(low=1, high=7)),
-    "min_child_samples": ("suggest_int", dict(low=5, high=100)),
+    "lambda_l1": ("suggest_float", {"low":1e-8, "high":10.0, "log":True}),
+    "lambda_l2": ("suggest_float", {"low":1e-8, "high":10.0, "log":True}),
+    "num_leaves": ("suggest_int", {"low": 2, "high": 256}),
+    "feature_fraction": ("suggest_float", {"low": 0.4, "high": 1.0}),
+    "bagging_fraction": ("suggest_float", {"low": 0.4, "high": 1.0}),
+    "bagging_freq": ("suggest_int", {"low": 1, "high": 7}),
+    "min_child_samples": ("suggest_int", {"low": 5, "high": 100}),
 }
 
 
@@ -58,7 +58,7 @@ def nested_cv_with_optuna(X, y, pipeline, metric_func, n_trials=50,
 
     for outer_train_idx, outer_test_idx in outer_skf.split(X, y):
         X_outer_train, X_outer_test = X.iloc[outer_train_idx], X.iloc[outer_test_idx]
-        y_outer_train, y_outer_test = y.iloc[outer_train_idx], y.iloc[outer_test_idx]
+        y_outer_train, _ = y.iloc[outer_train_idx], y.iloc[outer_test_idx]
 
         study = optuna.create_study(
             direction="maximize",

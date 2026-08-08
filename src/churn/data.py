@@ -3,9 +3,7 @@
 from pathlib import Path
 
 import pandas as pd
-import sklearn
 from sklearn.compose import ColumnTransformer
-import sklearn.compose
 from sklearn.preprocessing import OneHotEncoder
 
 CAT_COLS = [
