@@ -1,0 +1,15 @@
+.venv/
+.git/
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+notebooks/          # heavy, not needed at runtime
+scripts/            # training only
+assets/             # Readme artifacts
+dashboards/         # static deliverables, app doesn't read them
+*.md                # Only manuals
+.devcontainer/
+.vscode/
+.gitattributes
+.gitignore
